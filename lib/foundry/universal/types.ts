@@ -135,6 +135,16 @@ export interface SelectionInput {
   tenantPolicy?: TenantPolicy;
   /** Providers already tried and failed in this run (failover support). */
   excludeProviders?: string[];
+  /**
+   * When present, credential availability is answered by Prime Vault secret
+   * REFERENCES (metadata only) instead of raw env presence. Selection never
+   * resolves values.
+   */
+  vaultScope?: {
+    organizationId: string;
+    projectId: string;
+    environment: "development" | "staging" | "production";
+  };
 }
 
 export interface SelectionRejection {
@@ -150,6 +160,13 @@ export interface SelectionDecision {
   rejected: SelectionRejection[];
   decidedAt: string;
   engineVersion: string;
+  /** Explainable Provider Intelligence components for the winner (M3). */
+  intelligence?: {
+    score: number;
+    components: Record<string, number>;
+    reasons: string[];
+    sampleSize: number;
+  };
 }
 
 export class NoEligibleProviderError extends Error {

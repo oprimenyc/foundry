@@ -34,6 +34,20 @@ BASE_URL=http://localhost:3113 FOUNDRY_API_TOKEN=smoke-test-token-0123456789 nod
 # crash recovery proof: see scripts/crash-recovery-proof.ts header
 ```
 
+## Status 2026-07-11 (third loop — M2 + M3)
+
+- M2 universal provider orchestration committed (`3571260`, branch
+  `mission/m2-universal-providers`, queued as MQ-005). 20 categories /
+  34 providers, vendor-free execution core.
+- M3 Prime Vault + Provider Intelligence completed on
+  `mission/m3-vault-intelligence`: `lib/vault/*` control plane (references,
+  policy, approvals, grants, trusted resolver, redaction, execution gate,
+  memory/openbao/infisical/aws adapters) wired into the execution engine, and
+  deterministic provider-intelligence scoring in the selection engine.
+  65/65 tests; `npm run proof:m2` PASS with the gate live. See
+  docs/FOUNDRY_M3_VAULT_INTELLIGENCE.md. Live vault-backend proof is
+  credential-blocked (founder).
+
 ## Status 2026-07-11 (second loop)
 
 Milestones 9-14 are complete: real GitHub adapter, org tenancy, durable-event

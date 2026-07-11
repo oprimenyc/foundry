@@ -5,6 +5,8 @@ import { universalRegistry } from "./registry";
 import { credentialStatusFor } from "./credentials";
 import { healthScore } from "./health";
 import { estimateActionCost, exceedsMonthlyCap } from "./cost";
+import { computeIntelligenceScore, openIncidents } from "./intelligence";
+import { findReferencesForProvider } from "@/lib/vault/registry";
 import { mocksExplicitlyAllowed } from "@/lib/foundry/providers";
 import {
   DEFAULT_TENANT_POLICY,
@@ -64,11 +66,32 @@ export function selectProvider(input: SelectionInput): SelectionDecision {
       rejected.push({ providerId: id, reason: `estimated latency ${manifest.estimatedLatencyMs}ms exceeds tenant cap` });
       continue;
     }
-    const credentials = credentialStatusFor(manifest);
+    // Credential availability. With a vault scope, secret REFERENCES answer
+    // this (metadata only — values are never resolved during selection).
+    // Without one, M2 env-presence behavior is preserved.
     const mockAllowed = process.env.NODE_ENV !== "production" || mocksExplicitlyAllowed();
-    if (!credentials.satisfied && manifest.runtimeStatus === "live") {
-      rejected.push({ providerId: id, reason: `missing credentials: ${credentials.missingReferences.join(", ")}` });
-      continue;
+    const vaultReferences = input.vaultScope ? findReferencesForProvider(id, input.vaultScope) : [];
+    if (vaultReferences.length > 0) {
+      const now = new Date().toISOString();
+      const eligibleReference = vaultReferences.find(
+        (reference) =>
+          reference.status === "available" &&
+          (!reference.expiresAt || reference.expiresAt > now) &&
+          (reference.capabilities.length === 0 || reference.capabilities.includes(input.action))
+      );
+      if (!eligibleReference) {
+        rejected.push({
+          providerId: id,
+          reason: `no eligible credential reference (${vaultReferences.map((r) => `${r.id}:${r.status}`).join(", ")})`,
+        });
+        continue;
+      }
+    } else {
+      const credentials = credentialStatusFor(manifest);
+      if (!credentials.satisfied && manifest.runtimeStatus === "live") {
+        rejected.push({ providerId: id, reason: `missing credentials: ${credentials.missingReferences.join(", ")}` });
+        continue;
+      }
     }
     if (manifest.runtimeStatus === "mock" && !mockAllowed) {
       rejected.push({ providerId: id, reason: "mock provider disabled in production" });
@@ -81,9 +104,32 @@ export function selectProvider(input: SelectionInput): SelectionDecision {
     eligible.push(provider);
   }
 
+  // Open critical incidents disqualify a provider when an alternative exists —
+  // and are never silently ignored (recorded as rejections either way).
+  const withIncidents = eligible.map((provider) => ({
+    provider,
+    criticalIncident: openIncidents(provider.provider).some((incident) => incident.severity === "critical"),
+  }));
+  const incidentFree = withIncidents.filter((entry) => !entry.criticalIncident);
+  const incidentPool = incidentFree.length > 0 ? incidentFree : withIncidents;
+  for (const entry of withIncidents) {
+    if (!incidentPool.includes(entry)) {
+      rejected.push({ providerId: entry.provider.provider, reason: "open critical incident" });
+    }
+  }
+
   // Health floor applies only when a healthier alternative exists — degraded
   // availability beats no availability (Constitution Art. X).
-  const scored = eligible.map((provider) => ({ provider, score: healthScore(provider.provider) }));
+  const scored = incidentPool.map(({ provider }) => ({
+    provider,
+    score: healthScore(provider.provider),
+    intelligence: computeIntelligenceScore(provider.provider, {
+      capability: input.action,
+      tenantId: policy.tenantId,
+      policyEligible: true,
+      credentialAvailable: true,
+    }),
+  }));
   const healthy = scored.filter((entry) => entry.score >= MIN_HEALTH_SCORE);
   const pool = healthy.length > 0 ? healthy : scored;
   for (const entry of scored) {
@@ -100,6 +146,12 @@ export function selectProvider(input: SelectionInput): SelectionDecision {
     const bPreferred = b.provider.provider === preferred ? 1 : 0;
     if (aPreferred !== bPreferred) return bPreferred - aPreferred;
     if (a.score !== b.score) return b.score - a.score;
+    // Provider Intelligence: recorded reliability history (deterministic,
+    // explainable). With no history every provider blends to the same neutral
+    // prior, so pre-M3 ordering is unchanged.
+    const aReliability = a.intelligence.components.historicalReliability * (1 - a.intelligence.components.incidentPenalty);
+    const bReliability = b.intelligence.components.historicalReliability * (1 - b.intelligence.components.incidentPenalty);
+    if (aReliability !== bReliability) return bReliability - aReliability;
     const aCost = estimateActionCost(a.provider.manifest).comparable;
     const bCost = estimateActionCost(b.provider.manifest).comparable;
     if (aCost !== bCost) return aCost - bCost;
@@ -109,17 +161,25 @@ export function selectProvider(input: SelectionInput): SelectionDecision {
     return a.provider.provider.localeCompare(b.provider.provider);
   });
 
-  const winner = pool[0].provider;
+  const winnerEntry = pool[0];
+  const winner = winnerEntry.provider;
   const reasons = [
     winner.provider === preferred ? "tenant preferred provider" : undefined,
     `health score ${healthScore(winner.provider).toFixed(2)}`,
     `estimated cost $${winner.manifest.estimatedCost.amountPerAction}/action`,
     `estimated latency ${winner.manifest.estimatedLatencyMs}ms`,
     `runtime status ${winner.manifest.runtimeStatus}`,
+    ...winnerEntry.intelligence.reasons,
   ].filter((reason): reason is string => Boolean(reason));
 
   return {
     providerId: winner.provider,
+    intelligence: {
+      score: winnerEntry.intelligence.score,
+      components: winnerEntry.intelligence.components as unknown as Record<string, number>,
+      reasons: winnerEntry.intelligence.reasons,
+      sampleSize: winnerEntry.intelligence.sampleSize,
+    },
     category,
     action: input.action,
     reasons,

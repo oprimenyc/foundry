@@ -3,6 +3,9 @@ import { createEvidenceRecord, createEventRecord, createRollbackRecord, createSt
 import { getProviderAdapter, ProviderError, type ProviderAdapter, type ProviderExecutionInput, type ProviderExecutionResult } from "./providers";
 import { toExecutionPlan } from "./plan";
 import { normalizeCategory } from "./universal/types";
+import { recordObservation } from "./universal/intelligence";
+import { authorizeStepExecution } from "@/lib/vault/execution-gate";
+import { redactString } from "@/lib/vault/redaction";
 import type {
   DeploymentPlanRecord,
   DeploymentRunRecord,
@@ -194,6 +197,29 @@ export async function executeRun(runId: string) {
         });
 
         const adapter = getProviderAdapter(planStep.provider);
+        // Vault gate: kill switches bind every run; risk/approval enforcement
+        // binds runs registered with a vault context (pre-M3 runs pass tier 2).
+        try {
+          authorizeStepExecution({
+            runId: ctx.run.id,
+            projectId: ctx.project.id,
+            providerId: planStep.provider,
+            category: normalizeCategory(adapter.capability),
+            action: planStep.action,
+          });
+        } catch (error) {
+          const message = redactString(error instanceof Error ? error.message : String(error));
+          recordObservation({ providerId: planStep.provider, kind: "auth_failure", capability: adapter.capability });
+          await updateStep(stepRecord.id, (current) => ({ ...current, status: "failed" }));
+          await appendEvent(ctx, {
+            stepId: stepRecord.id,
+            stage: "step",
+            status: "failed",
+            provider: planStep.provider,
+            sanitizedMessage: `Vault gate denied ${planStep.provider}.${planStep.action}: ${message}`,
+          });
+          throw error;
+        }
         const executionInput: ProviderExecutionInput = {
           runId: ctx.run.id,
           stepId: stepRecord.id,
@@ -204,14 +230,21 @@ export async function executeRun(runId: string) {
 
         let result: ProviderExecutionResult | undefined;
         let attempt = 0;
+        const stepStartedMs = Date.now();
         // First attempt plus up to retryLimit retries for retryable failures.
         for (;;) {
           try {
             result = await executeWithTimeout(adapter, planStep.action, executionInput, planStep.timeoutMs);
             break;
           } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
+            const message = redactString(error instanceof Error ? error.message : String(error));
             if (!isRetryable(error) || attempt >= planStep.retryLimit) {
+              recordObservation({
+                providerId: planStep.provider,
+                kind: "execution_failure",
+                capability: adapter.capability,
+                latencyMs: Date.now() - stepStartedMs,
+              });
               await updateStep(stepRecord.id, (current) => ({ ...current, status: "failed" }));
               await appendEvent(ctx, {
                 stepId: stepRecord.id,
@@ -233,6 +266,13 @@ export async function executeRun(runId: string) {
             });
           }
         }
+
+        recordObservation({
+          providerId: planStep.provider,
+          kind: "execution_success",
+          capability: adapter.capability,
+          latencyMs: Date.now() - stepStartedMs,
+        });
 
         // Provider-agnostic reference propagation: adapters declare which
         // generic references (repoUrl, deploymentUrl, …) their result exposes.
@@ -290,6 +330,15 @@ export async function executeRun(runId: string) {
               provider: planStep.provider,
               sanitizedMessage: `Rolling back ${planStep.provider}.${planStep.action}`,
             });
+            // Rollback needs its own vault scope — forward grants never cover it.
+            authorizeStepExecution({
+              runId: ctx.run.id,
+              projectId: ctx.project.id,
+              providerId: planStep.provider,
+              category: normalizeCategory(adapter.capability),
+              action: planStep.rollbackAction as string,
+              scope: "rollback",
+            });
             await adapter.compensate?.(planStep.action, {
               runId: ctx.run.id,
               stepId: stepRecord?.id || planStep.id,
@@ -308,6 +357,7 @@ export async function executeRun(runId: string) {
             if (stepRecord) {
               await updateStep(stepRecord.id, (current) => ({ ...current, status: "rolled_back" }));
             }
+            recordObservation({ providerId: planStep.provider, kind: "rollback", capability: adapter.capability });
           }
         : undefined,
     });
@@ -450,6 +500,15 @@ async function performRollback(context: ExecutionContext) {
       sanitizedMessage: `Rolling back ${planStep.provider}.${planStep.action}`,
     });
     try {
+      // Rollback needs its own vault scope — forward grants never cover it.
+      authorizeStepExecution({
+        runId: context.run.id,
+        projectId: context.project.id,
+        providerId: planStep.provider,
+        category: normalizeCategory(adapter.capability),
+        action: planStep.rollbackAction,
+        scope: "rollback",
+      });
       await adapter.compensate?.(planStep.action, {
         runId: context.run.id,
         stepId: step.id,
@@ -458,6 +517,7 @@ async function performRollback(context: ExecutionContext) {
         providerReferences: context.providerReferences,
         providerReference: step.providerReference,
       });
+      recordObservation({ providerId: planStep.provider, kind: "rollback", capability: adapter.capability });
       await updateStep(step.id, (current) => ({ ...current, status: "rolled_back" }));
       if (step.rollbackActionId) {
         await updateRecords("rollbacks", (item) => item.id === step.rollbackActionId, (item) => ({
@@ -467,7 +527,7 @@ async function performRollback(context: ExecutionContext) {
         }));
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = redactString(error instanceof Error ? error.message : String(error));
       await updateRun(context.run.id, (run) => ({
         ...run,
         status: "failed",

@@ -8,6 +8,7 @@ import { getSecretsService } from "@/lib/foundry/credentials";
 import { getStoreSnapshot, resetFoundryPersistence } from "@/lib/foundry/store";
 import { POST as createProjectRoute } from "@/app/api/projects/route";
 import { POST as sessionLoginRoute } from "@/app/api/auth/session/route";
+import { POST as cancelRoute } from "@/app/api/projects/[id]/runs/[runId]/cancel/route";
 import { GET as healthzRoute } from "@/app/api/healthz/route";
 import { getProviderAdapter, listRegisteredProviders, registerProviderAdapter, ProviderError, type ProviderAdapter } from "@/lib/foundry/providers";
 import { ProviderRegistry, UnknownProviderError, DuplicateProviderError } from "@/lib/foundry/registry";
@@ -276,6 +277,72 @@ test("existing mocked github/vercel providers still resolve through the registry
 function randomUUIDForTest() {
   return Math.random().toString(36).slice(2);
 }
+
+test("cancellation during an active run stops execution before the next step", async () => {
+  await resetEnv("cancel-active");
+  const providerId = `slow-provider-${randomUUIDForTest()}`;
+  let flakyStepStarted: (() => void) | undefined;
+  const started = new Promise<void>((resolve) => {
+    flakyStepStarted = resolve;
+  });
+  registerProviderAdapter({
+    provider: providerId,
+    capability: "deployment",
+    actions: ["create_project"],
+    async execute() {
+      flakyStepStarted?.();
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      return { providerReference: "slow-ref", output: { projectId: "slow-project" } };
+    },
+  });
+  const project = await createProject({ name: "Cancel", prompt: "Launch cancel app on Vercel" });
+  await seedMockCredentials(project.id);
+  const { plan } = await createPlanForProject({
+    projectId: project.id,
+    prompt: project.prompt,
+    // Slow step first: cancellation is honored before the NEXT step starts.
+    draftPlan: {
+      config: { name: "Cancel App", hosting: "vercel", repository: "cancel-repo" },
+      budget: { maxSteps: 5, maxRuntimeMs: 120000 },
+      steps: [
+        {
+          id: "slow-step",
+          provider: providerId,
+          action: "create_project",
+          name: "Slow provider step",
+          dependsOn: [],
+          config: { projectName: "cancel-app", credentialRef: "secret:vercel/deployment" },
+          timeoutMs: 5000,
+          retryLimit: 0,
+        },
+        {
+          id: "github-create",
+          provider: "github",
+          action: "create_repository",
+          name: "Create repo",
+          dependsOn: ["slow-step"],
+          config: { repositoryName: "cancel-repo" },
+          timeoutMs: 15000,
+          retryLimit: 0,
+        },
+      ],
+    },
+  });
+  assert.equal(plan.status, "validated");
+  const run = await createRunForProject({ projectId: project.id, planId: plan.id, idempotencyKey: "cancel-key" });
+
+  await started; // the slow step is now executing
+  const res = await cancelRoute(
+    new Request(`http://localhost/api/projects/${project.id}/runs/${run.id}/cancel`, { method: "POST" }) as any,
+    { params: { id: project.id, runId: run.id } }
+  );
+  assert.equal(res.status, 202);
+
+  const terminal = await waitForTerminal(run.id);
+  assert.equal(terminal.status, "cancelled");
+  assert.equal(terminal.failureCategory, "cancelled");
+  assert.equal(terminal.terminalState, "cancelled");
+});
 
 test("API routes require auth when FOUNDRY_API_TOKEN is set; bearer and session cookie both work", async () => {
   await resetEnv("auth-routes");

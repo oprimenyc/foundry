@@ -25,7 +25,7 @@ HEAD should be at or after `c20a83b`).
 
 ```bash
 npm run typecheck   # clean
-npm test            # 23/23 (node:test via tsx)
+npm test            # 27/27 (node:test via tsx)
 npm run build       # clean (instrumentationHook warning is expected on 14.2)
 npm run proof:mock  # mock e2e: completed + rolled_back
 # live smoke (auth enforced):
@@ -36,13 +36,9 @@ BASE_URL=http://localhost:3113 FOUNDRY_API_TOKEN=smoke-test-token-0123456789 nod
 
 ## Next milestones, in priority order
 
-1. **Cancellation regression coverage** — `requestCancellation` sets a flag
-   checked before each step, but no test exercises cancel-during-active-run or
-   the cancel API route. Add one.
-2. **Live Vercel deployment actions** — `VercelHttpAdapter` fails closed on
-   `trigger_deployment`/`verify_deployment` (not implemented). Implement against
-   the Vercel deployments API. Requires `VERCEL_API_TOKEN` (human blocker for
-   live proof; implement + test against a stub HTTP layer without it).
+1. ~~Cancellation regression coverage~~ — done (`34d71bf`).
+2. ~~Live Vercel deployment actions~~ — implemented with stubbed-transport
+   tests (`1916c64`); live-API proof still needs `VERCEL_API_TOKEN`.
 3. **Repository provider: real GitHub adapter** — mock only today. Same pattern
    as Vercel: registry-registered, fail-closed without `GITHUB_TOKEN`.
 4. **DNS / email / payments / telephony domains** — not started; build only
@@ -52,9 +48,8 @@ BASE_URL=http://localhost:3113 FOUNDRY_API_TOKEN=smoke-test-token-0123456789 nod
    the redundant publishes.
 6. **Per-user identity/tenancy** — single shared token today; orgId is a
    hardcoded `org_local`.
-7. **README/docs refresh** — document env vars (FOUNDRY_PERSISTENCE,
-   FOUNDRY_SQLITE_FILE, FOUNDRY_API_TOKEN, FOUNDRY_MASTER_KEY, VERCEL_API_TOKEN)
-   and operations (backup = copy sqlite file while stopped, or use WAL checkpoint).
+7. ~~README/docs refresh~~ — done (`691bd4d`); orphaned Supabase client,
+   api-keys.ts, and migrations removed.
 
 ## Known human blockers
 

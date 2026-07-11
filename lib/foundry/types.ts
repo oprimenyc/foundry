@@ -158,6 +158,7 @@ export interface DeploymentRunRecord {
   rollbackStatus: RollbackStatus;
   providerReferences: Record<string, string>;
   evidenceReferences: string[];
+  requestedBy?: string;
   terminalState?: "success" | "failure" | "cancelled" | "rolled_back";
   cancellationRequestedAt?: string;
 }

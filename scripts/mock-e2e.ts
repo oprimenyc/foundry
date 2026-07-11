@@ -91,14 +91,14 @@ async function main() {
   await rm(process.env.FOUNDRY_STORE_FILE, { force: true });
   resetFoundryPersistence();
 
-  const project = await createProject({ name: "Sprint Proof", prompt: "Launch Sprint Proof using GitHub and Vercel." });
+  const project = await createProject({ orgId: "org_local", name: "Sprint Proof", prompt: "Launch Sprint Proof using GitHub and Vercel." });
   await seedMockCredentials(project.id);
-  const { plan } = await createPlanForProject({ projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
-  const run = await createRunForProject({ projectId: project.id, planId: plan.id, idempotencyKey: "proof-run" });
+  const { plan } = await createPlanForProject({ orgId: "org_local", projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
+  const run = await createRunForProject({ orgId: "org_local", projectId: project.id, planId: plan.id, idempotencyKey: "proof-run" });
   const terminal = await waitForTerminal(run.id);
   const view = await getRunView(project.id, run.id);
 
-  const rollbackRun = await createRunForProject({ projectId: project.id, planId: plan.id, idempotencyKey: "rollback-proof-run" });
+  const rollbackRun = await createRunForProject({ orgId: "org_local", projectId: project.id, planId: plan.id, idempotencyKey: "rollback-proof-run" });
   await waitForTerminal(rollbackRun.id);
   await requestRollback(rollbackRun.id);
   const rolledBack = await waitForTerminal(rollbackRun.id);

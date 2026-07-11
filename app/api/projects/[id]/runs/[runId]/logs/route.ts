@@ -1,11 +1,19 @@
-import { requireApiAuth } from "@/lib/foundry/auth";
+import { resolvePrincipal } from "@/lib/foundry/auth";
+import { authorizeRunAccess, ScopeError } from "@/lib/foundry/service";
 import { listRunEvents } from "@/lib/foundry/service";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request, { params }: { params: { id: string; runId: string } }) {
-  const denied = requireApiAuth(req);
-  if (denied) return denied;
+  const auth = resolvePrincipal(req);
+  if (!auth.ok) return auth.response;
+  try {
+    // SSE enforces the same org scope as the standard API routes.
+    await authorizeRunAccess(params.id, params.runId, auth.principal.orgId);
+  } catch (error) {
+    if (error instanceof ScopeError) return new Response(JSON.stringify({ error: error.message }), { status: 404 });
+    throw error;
+  }
   const encoder = new TextEncoder();
   let cursor = Number(req.headers.get("last-event-id") || "0");
 

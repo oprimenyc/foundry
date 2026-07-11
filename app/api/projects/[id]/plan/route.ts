@@ -1,4 +1,5 @@
-import { requireApiAuth } from "@/lib/foundry/auth";
+import { resolvePrincipal } from "@/lib/foundry/auth";
+import { ScopeError } from "@/lib/foundry/service";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createPlanForProject } from "@/lib/foundry/service";
@@ -9,8 +10,8 @@ const BodySchema = z.object({
 });
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const denied = requireApiAuth(req);
-  if (denied) return denied;
+  const auth = resolvePrincipal(req);
+  if (!auth.ok) return auth.response;
   const body = await req.json().catch(() => null);
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {
@@ -20,11 +21,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   try {
     const result = await createPlanForProject({
       projectId: params.id,
+      orgId: auth.principal.orgId,
       prompt: parsed.data.prompt,
       draftPlan: parsed.data.draftPlan,
     });
     return NextResponse.json(result, { status: result.plan.status === "validated" ? 201 : 422 });
   } catch (error) {
+    if (error instanceof ScopeError) return NextResponse.json({ error: error.message }, { status: 404 });
     return NextResponse.json({ error: error instanceof Error ? error.message : "Plan creation failed" }, { status: 500 });
   }
 }

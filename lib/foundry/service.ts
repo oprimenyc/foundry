@@ -7,12 +7,18 @@ import type { DeploymentPlanRecord, DeploymentRunRecord, ProjectRecord } from ".
 import { upsertProviderCredential } from "./credentials";
 import { listRegisteredProviders } from "./providers";
 
-const DEFAULT_ORG_ID = "org_local";
+/** Thrown when a resource does not exist in the caller's org scope. Routes map it to 404 (no cross-org enumeration). */
+export class ScopeError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ScopeError";
+  }
+}
 
-export async function createProject(input: { name: string; prompt: string }) {
+export async function createProject(input: { name: string; prompt: string; orgId: string; requestedBy?: string }) {
   const slug = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const project = createProjectRecord({
-    orgId: DEFAULT_ORG_ID,
+    orgId: input.orgId,
     name: input.name,
     slug,
     prompt: input.prompt,
@@ -24,10 +30,11 @@ export async function createProject(input: { name: string; prompt: string }) {
 
 export async function createPlanForProject(input: {
   projectId: string;
+  orgId: string;
   prompt: string;
   draftPlan?: unknown;
 }) {
-  const project = await requireProject(input.projectId);
+  const project = await requireProject(input.projectId, input.orgId);
   const draft = input.draftPlan || (await generatePlanDraft(input.prompt, project));
   const validation = validateDraftPlan(draft);
   const plan = createPlanRecord({
@@ -121,15 +128,18 @@ async function generatePlanDraft(prompt: string, project: ProjectRecord) {
 
 export async function createRunForProject(input: {
   projectId: string;
+  orgId: string;
   planId: string;
   idempotencyKey?: string;
+  requestedBy?: string;
 }): Promise<DeploymentRunRecord> {
   const health = await persistenceHealth();
   if (process.env.NODE_ENV === "production" && !health.productionSafe) {
     throw new Error("Production execution requires durable configured persistence");
   }
-  const project = await requireProject(input.projectId);
+  const project = await requireProject(input.projectId, input.orgId);
   const plan = await requirePlan(input.planId);
+  if (plan.projectId !== project.id) throw new ScopeError("Plan does not belong to this project");
   if (plan.status !== "validated") {
     throw new Error("Plan is not validated");
   }
@@ -148,21 +158,29 @@ export async function createRunForProject(input: {
     rollbackStatus: "not_required",
     providerReferences: {},
     evidenceReferences: [],
+    requestedBy: input.requestedBy,
   });
   await insertRecord("runs", run);
   await startRunExecution(run.id);
   return run;
 }
 
-export async function listRunEvents(runId: string, afterSequence = 0) {
+export async function listRunEvents(runId: string, afterSequence = 0, orgId?: string) {
   const snapshot = await getStoreSnapshot();
+  if (orgId !== undefined) {
+    const run = snapshot.runs.find((item) => item.id === runId);
+    const project = run && snapshot.projects.find((item) => item.id === run.projectId);
+    if (!project || project.orgId !== orgId) throw new ScopeError(`Run ${runId} not found`);
+  }
   return snapshot.events
     .filter((event) => event.runId === runId && event.sequence > afterSequence)
     .sort((a, b) => a.sequence - b.sequence);
 }
 
-export async function getRunView(projectId: string, runId: string) {
+export async function getRunView(projectId: string, runId: string, orgId?: string) {
   const snapshot = await getStoreSnapshot();
+  const project = snapshot.projects.find((item) => item.id === projectId);
+  if (orgId !== undefined && (!project || project.orgId !== orgId)) return null;
   const run = snapshot.runs.find((item) => item.id === runId && item.projectId === projectId);
   if (!run) return null;
   return {
@@ -172,8 +190,8 @@ export async function getRunView(projectId: string, runId: string) {
   };
 }
 
-export async function seedMockCredentials(projectId: string) {
-  const project = await requireProject(projectId);
+export async function seedMockCredentials(projectId: string, orgId?: string) {
+  const project = await requireProject(projectId, orgId);
   const githubToken = process.env.GITHUB_TOKEN || "mock-github-token";
   const vercelToken = process.env.VERCEL_API_TOKEN || "mock-vercel-token";
   await upsertProviderCredential({
@@ -221,10 +239,24 @@ export async function persistenceHealth() {
   };
 }
 
-async function requireProject(projectId: string) {
+async function requireProject(projectId: string, orgId?: string) {
   const project = (await getStoreSnapshot()).projects.find((item) => item.id === projectId);
-  if (!project) throw new Error(`Project ${projectId} not found`);
+  // Cross-org access reads identically to nonexistence: no enumeration signal.
+  if (!project || (orgId !== undefined && project.orgId !== orgId)) {
+    throw new ScopeError(`Project ${projectId} not found`);
+  }
   return project;
+}
+
+/** Authorizes run-level operations (cancel/rollback/view) for an org scope. */
+export async function authorizeRunAccess(projectId: string, runId: string, orgId: string) {
+  const snapshot = await getStoreSnapshot();
+  const project = snapshot.projects.find((item) => item.id === projectId);
+  const run = snapshot.runs.find((item) => item.id === runId && item.projectId === projectId);
+  if (!project || project.orgId !== orgId || !run) {
+    throw new ScopeError(`Run ${runId} not found`);
+  }
+  return run;
 }
 
 async function requirePlan(planId: string) {

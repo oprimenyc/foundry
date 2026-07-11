@@ -9,6 +9,8 @@ import { getStoreSnapshot, resetFoundryPersistence } from "@/lib/foundry/store";
 import { POST as createProjectRoute } from "@/app/api/projects/route";
 import { POST as sessionLoginRoute } from "@/app/api/auth/session/route";
 import { POST as cancelRoute } from "@/app/api/projects/[id]/runs/[runId]/cancel/route";
+import { GET as runViewRoute } from "@/app/api/projects/[id]/runs/[runId]/route";
+import { GET as runLogsRoute } from "@/app/api/projects/[id]/runs/[runId]/logs/route";
 import { GET as healthzRoute } from "@/app/api/healthz/route";
 import { getProviderAdapter, listRegisteredProviders, registerProviderAdapter, ProviderError, VercelHttpAdapter, GitHubHttpAdapter, type ProviderAdapter } from "@/lib/foundry/providers";
 import { VercelAdapter as VercelClient } from "@/lib/providers/vercel.adapter";
@@ -21,6 +23,8 @@ const testDir = path.join(process.cwd(), ".foundry-test-data");
 async function resetEnv(name: string, mode: "file" | "sqlite" = "file") {
   process.env.FOUNDRY_MASTER_KEY = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
   delete process.env.FOUNDRY_API_TOKEN;
+  delete process.env.FOUNDRY_PRINCIPALS;
+  delete process.env.FOUNDRY_ORG_ID;
   process.env.FOUNDRY_PERSISTENCE = mode;
   process.env.FOUNDRY_STORE_FILE = path.join(testDir, `${name}.json`);
   process.env.FOUNDRY_SQLITE_FILE = path.join(testDir, `${name}.sqlite`);
@@ -116,8 +120,9 @@ function validDraftPlan() {
 
 test("invalid planner output is rejected", async () => {
   await resetEnv("invalid-plan");
-  const project = await createProject({ name: "Invalid Plan", prompt: "Launch invalid plan app" });
+  const project = await createProject({ orgId: "org_local", name: "Invalid Plan", prompt: "Launch invalid plan app" });
   const { plan } = await createPlanForProject({
+    orgId: "org_local",
     projectId: project.id,
     prompt: project.prompt,
     draftPlan: {
@@ -158,11 +163,11 @@ test("run creation route returns 201 project and durable records persist", async
 
 test("full mocked project-to-deployment path completes and persists evidence", async () => {
   await resetEnv("happy-path");
-  const project = await createProject({ name: "Happy Path", prompt: "Launch happy path app on Vercel" });
+  const project = await createProject({ orgId: "org_local", name: "Happy Path", prompt: "Launch happy path app on Vercel" });
   await seedMockCredentials(project.id);
-  const { plan } = await createPlanForProject({ projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
+  const { plan } = await createPlanForProject({ orgId: "org_local", projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
   assert.equal(plan.status, "validated");
-  const run = await createRunForProject({ projectId: project.id, planId: plan.id, idempotencyKey: "happy-key" });
+  const run = await createRunForProject({ orgId: "org_local", projectId: project.id, planId: plan.id, idempotencyKey: "happy-key" });
   const terminal = await waitForTerminal(run.id);
   assert.equal(terminal.status, "completed");
 
@@ -182,11 +187,11 @@ test("full mocked project-to-deployment path completes and persists evidence", a
 
 test("logs replay in order and duplicate idempotency key does not duplicate resources", async () => {
   await resetEnv("replay");
-  const project = await createProject({ name: "Replay", prompt: "Launch replay app on Vercel" });
+  const project = await createProject({ orgId: "org_local", name: "Replay", prompt: "Launch replay app on Vercel" });
   await seedMockCredentials(project.id);
-  const { plan } = await createPlanForProject({ projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
-  const run = await createRunForProject({ projectId: project.id, planId: plan.id, idempotencyKey: "same-key" });
-  const run2 = await createRunForProject({ projectId: project.id, planId: plan.id, idempotencyKey: "same-key" });
+  const { plan } = await createPlanForProject({ orgId: "org_local", projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
+  const run = await createRunForProject({ orgId: "org_local", projectId: project.id, planId: plan.id, idempotencyKey: "same-key" });
+  const run2 = await createRunForProject({ orgId: "org_local", projectId: project.id, planId: plan.id, idempotencyKey: "same-key" });
   assert.equal(run.id, run2.id);
   await waitForTerminal(run.id);
   const allEvents = await listRunEvents(run.id, 0);
@@ -200,10 +205,10 @@ test("logs replay in order and duplicate idempotency key does not duplicate reso
 
 test("rollback executes compensation in reverse", async () => {
   await resetEnv("rollback");
-  const project = await createProject({ name: "Rollback", prompt: "Launch rollback app on Vercel" });
+  const project = await createProject({ orgId: "org_local", name: "Rollback", prompt: "Launch rollback app on Vercel" });
   await seedMockCredentials(project.id);
-  const { plan } = await createPlanForProject({ projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
-  const run = await createRunForProject({ projectId: project.id, planId: plan.id, idempotencyKey: "rollback-key" });
+  const { plan } = await createPlanForProject({ orgId: "org_local", projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
+  const run = await createRunForProject({ orgId: "org_local", projectId: project.id, planId: plan.id, idempotencyKey: "rollback-key" });
   await waitForTerminal(run.id);
   await requestRollback(run.id);
   const terminal = await waitForTerminal(run.id);
@@ -215,10 +220,10 @@ test("rollback executes compensation in reverse", async () => {
 
 test("restart resumes safely from queued run", async () => {
   await resetEnv("resume");
-  const project = await createProject({ name: "Resume", prompt: "Launch resume app on Vercel" });
+  const project = await createProject({ orgId: "org_local", name: "Resume", prompt: "Launch resume app on Vercel" });
   await seedMockCredentials(project.id);
-  const { plan } = await createPlanForProject({ projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
-  const run = await createRunForProject({ projectId: project.id, planId: plan.id, idempotencyKey: "resume-key" });
+  const { plan } = await createPlanForProject({ orgId: "org_local", projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
+  const run = await createRunForProject({ orgId: "org_local", projectId: project.id, planId: plan.id, idempotencyKey: "resume-key" });
   resetFoundryPersistence();
   await resumeIncompleteRuns();
   const terminal = await waitForTerminal(run.id);
@@ -485,9 +490,10 @@ test("cancellation during an active run stops execution before the next step", a
       return { providerReference: "slow-ref", output: { projectId: "slow-project" } };
     },
   });
-  const project = await createProject({ name: "Cancel", prompt: "Launch cancel app on Vercel" });
+  const project = await createProject({ orgId: "org_local", name: "Cancel", prompt: "Launch cancel app on Vercel" });
   await seedMockCredentials(project.id);
   const { plan } = await createPlanForProject({
+    orgId: "org_local",
     projectId: project.id,
     prompt: project.prompt,
     // Slow step first: cancellation is honored before the NEXT step starts.
@@ -519,7 +525,7 @@ test("cancellation during an active run stops execution before the next step", a
     },
   });
   assert.equal(plan.status, "validated");
-  const run = await createRunForProject({ projectId: project.id, planId: plan.id, idempotencyKey: "cancel-key" });
+  const run = await createRunForProject({ orgId: "org_local", projectId: project.id, planId: plan.id, idempotencyKey: "cancel-key" });
 
   await started; // the slow step is now executing
   const res = await cancelRoute(
@@ -607,6 +613,109 @@ test("production API fails closed when FOUNDRY_API_TOKEN is missing", async () =
   Object.assign(process.env, { NODE_ENV: "test" });
 });
 
+const ORG_A_TOKEN = "org-a-token-0123456789abcdef";
+const ORG_B_TOKEN = "org-b-token-0123456789abcdef";
+
+function setTwoOrgPrincipals() {
+  process.env.FOUNDRY_PRINCIPALS = JSON.stringify([
+    { token: ORG_A_TOKEN, id: "svc-a", orgId: "org_a", role: "admin" },
+    { token: ORG_B_TOKEN, id: "svc-b", orgId: "org_b", role: "admin" },
+  ]);
+}
+
+test("cross-tenant isolation: another org cannot view, cancel, or enumerate a run", async () => {
+  await resetEnv("tenancy");
+  setTwoOrgPrincipals();
+
+  // Org A creates a project and completes a run.
+  const project = await createProject({ orgId: "org_a", name: "Tenant A App", prompt: "Launch tenant A app on Vercel", requestedBy: "svc-a" });
+  await seedMockCredentials(project.id, "org_a");
+  const { plan } = await createPlanForProject({ orgId: "org_a", projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
+  const run = await createRunForProject({ orgId: "org_a", projectId: project.id, planId: plan.id, idempotencyKey: "tenant-a", requestedBy: "svc-a" });
+  await waitForTerminal(run.id);
+
+  // Audit actor persisted on the run.
+  const snapshot = await getStoreSnapshot();
+  assert.equal(snapshot.runs.find((item) => item.id === run.id)?.requestedBy, "svc-a");
+
+  // Org B sees 404 (not 403 — no enumeration signal) on the run view.
+  const viewB = await runViewRoute(
+    new Request(`http://localhost/api/projects/${project.id}/runs/${run.id}`, {
+      headers: { Authorization: `Bearer ${ORG_B_TOKEN}` },
+    }) as any,
+    { params: { id: project.id, runId: run.id } }
+  );
+  assert.equal(viewB.status, 404);
+
+  // Org B cannot cancel org A's run.
+  const cancelB = await cancelRoute(
+    new Request(`http://localhost/api/projects/${project.id}/runs/${run.id}/cancel`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${ORG_B_TOKEN}` },
+    }) as any,
+    { params: { id: project.id, runId: run.id } }
+  );
+  assert.equal(cancelB.status, 404);
+
+  // Org B cannot subscribe to org A's event stream.
+  const logsB = await runLogsRoute(
+    new Request(`http://localhost/api/projects/${project.id}/runs/${run.id}/logs`, {
+      headers: { Authorization: `Bearer ${ORG_B_TOKEN}` },
+    }) as any,
+    { params: { id: project.id, runId: run.id } }
+  );
+  assert.equal(logsB.status, 404);
+
+  // Org A still has full access.
+  const viewA = await runViewRoute(
+    new Request(`http://localhost/api/projects/${project.id}/runs/${run.id}`, {
+      headers: { Authorization: `Bearer ${ORG_A_TOKEN}` },
+    }) as any,
+    { params: { id: project.id, runId: run.id } }
+  );
+  assert.equal(viewA.status, 200);
+});
+
+test("service-layer scope: listRunEvents and plan creation reject cross-org access", async () => {
+  await resetEnv("tenancy-service");
+  const project = await createProject({ orgId: "org_a", name: "Scope App", prompt: "Launch scope app on Vercel" });
+  await seedMockCredentials(project.id, "org_a");
+  const { plan } = await createPlanForProject({ orgId: "org_a", projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
+  const run = await createRunForProject({ orgId: "org_a", projectId: project.id, planId: plan.id, idempotencyKey: "scope-key" });
+  await waitForTerminal(run.id);
+
+  await assert.rejects(async () => listRunEvents(run.id, 0, "org_b"), /not found/);
+  await assert.rejects(
+    async () => createPlanForProject({ orgId: "org_b", projectId: project.id, prompt: "steal", draftPlan: validDraftPlan() }),
+    /not found/
+  );
+  await assert.rejects(
+    async () => createRunForProject({ orgId: "org_b", projectId: project.id, planId: plan.id }),
+    /not found/
+  );
+  await assert.rejects(async () => seedMockCredentials(project.id, "org_b"), /not found/);
+  const events = await listRunEvents(run.id, 0, "org_a");
+  assert.ok(events.length > 0);
+});
+
+test("malformed FOUNDRY_PRINCIPALS fails closed: nobody authenticates", async () => {
+  await resetEnv("bad-principals");
+  process.env.FOUNDRY_PRINCIPALS = "{not json";
+  Object.assign(process.env, { NODE_ENV: "production" });
+  try {
+    const res = await createProjectRoute(
+      new Request("http://localhost/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${ORG_A_TOKEN}` },
+        body: JSON.stringify({ name: "X", prompt: "Launch x app on Vercel now" }),
+      }) as any
+    );
+    assert.equal(res.status, 503);
+  } finally {
+    Object.assign(process.env, { NODE_ENV: "test" });
+  }
+});
+
 test("missing production master key fails closed for secret initialization", async () => {
   await resetEnv("master-key");
   Object.assign(process.env, { NODE_ENV: "production" });
@@ -663,11 +772,11 @@ test("retryable provider failure is retried and the run completes with retry evi
       return { providerReference: "flaky-ref", output: { projectId: "flaky-project" } };
     },
   });
-  const project = await createProject({ name: "Retry Success", prompt: "Launch retry app on Vercel" });
+  const project = await createProject({ orgId: "org_local", name: "Retry Success", prompt: "Launch retry app on Vercel" });
   await seedMockCredentials(project.id);
-  const { plan } = await createPlanForProject({ projectId: project.id, prompt: project.prompt, draftPlan: retryPlan(providerId) });
+  const { plan } = await createPlanForProject({ orgId: "org_local", projectId: project.id, prompt: project.prompt, draftPlan: retryPlan(providerId) });
   assert.equal(plan.status, "validated");
-  const run = await createRunForProject({ projectId: project.id, planId: plan.id, idempotencyKey: "retry-ok" });
+  const run = await createRunForProject({ orgId: "org_local", projectId: project.id, planId: plan.id, idempotencyKey: "retry-ok" });
   const terminal = await waitForTerminal(run.id);
   assert.equal(terminal.status, "completed");
   assert.equal(attempts, 3);
@@ -692,10 +801,10 @@ test("step timeout is enforced, classified, and exhausts retries into run failur
       return { providerReference: "never", output: {} };
     },
   });
-  const project = await createProject({ name: "Timeout", prompt: "Launch timeout app on Vercel" });
+  const project = await createProject({ orgId: "org_local", name: "Timeout", prompt: "Launch timeout app on Vercel" });
   await seedMockCredentials(project.id);
-  const { plan } = await createPlanForProject({ projectId: project.id, prompt: project.prompt, draftPlan: retryPlan(providerId) });
-  const run = await createRunForProject({ projectId: project.id, planId: plan.id, idempotencyKey: "retry-timeout" });
+  const { plan } = await createPlanForProject({ orgId: "org_local", projectId: project.id, prompt: project.prompt, draftPlan: retryPlan(providerId) });
+  const run = await createRunForProject({ orgId: "org_local", projectId: project.id, planId: plan.id, idempotencyKey: "retry-timeout" });
   const terminal = await waitForTerminal(run.id, 15000);
   assert.equal(terminal.status, "failed");
   assert.equal(terminal.failureCategory, "timeout");
@@ -718,10 +827,10 @@ test("non-retryable provider failure is not retried", async () => {
       throw new ProviderError("invalid credentials", { retryable: false, category: "provider" });
     },
   });
-  const project = await createProject({ name: "No Retry", prompt: "Launch no-retry app on Vercel" });
+  const project = await createProject({ orgId: "org_local", name: "No Retry", prompt: "Launch no-retry app on Vercel" });
   await seedMockCredentials(project.id);
-  const { plan } = await createPlanForProject({ projectId: project.id, prompt: project.prompt, draftPlan: retryPlan(providerId) });
-  const run = await createRunForProject({ projectId: project.id, planId: plan.id, idempotencyKey: "no-retry" });
+  const { plan } = await createPlanForProject({ orgId: "org_local", projectId: project.id, prompt: project.prompt, draftPlan: retryPlan(providerId) });
+  const run = await createRunForProject({ orgId: "org_local", projectId: project.id, planId: plan.id, idempotencyKey: "no-retry" });
   const terminal = await waitForTerminal(run.id);
   assert.equal(terminal.status, "failed");
   assert.equal(attempts, 1);
@@ -729,10 +838,10 @@ test("non-retryable provider failure is not retried", async () => {
 
 test("sqlite persistence: full mocked deployment completes and survives process-level reset", async () => {
   await resetEnv("sqlite-e2e", "sqlite");
-  const project = await createProject({ name: "Sqlite E2E", prompt: "Launch sqlite e2e app on Vercel" });
+  const project = await createProject({ orgId: "org_local", name: "Sqlite E2E", prompt: "Launch sqlite e2e app on Vercel" });
   await seedMockCredentials(project.id);
-  const { plan } = await createPlanForProject({ projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
-  const run = await createRunForProject({ projectId: project.id, planId: plan.id, idempotencyKey: "sqlite-key" });
+  const { plan } = await createPlanForProject({ orgId: "org_local", projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
+  const run = await createRunForProject({ orgId: "org_local", projectId: project.id, planId: plan.id, idempotencyKey: "sqlite-key" });
   const terminal = await waitForTerminal(run.id);
   assert.equal(terminal.status, "completed");
 
@@ -773,12 +882,12 @@ test("unknown FOUNDRY_PERSISTENCE mode fails closed", async () => {
 
 test("production run creation fails closed on non-production-safe persistence", async () => {
   await resetEnv("prod-gate", "file");
-  const project = await createProject({ name: "Prod Gate", prompt: "Launch prod gate app on Vercel" });
+  const project = await createProject({ orgId: "org_local", name: "Prod Gate", prompt: "Launch prod gate app on Vercel" });
   await seedMockCredentials(project.id);
-  const { plan } = await createPlanForProject({ projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
+  const { plan } = await createPlanForProject({ orgId: "org_local", projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
   Object.assign(process.env, { NODE_ENV: "production" });
   await assert.rejects(
-    async () => createRunForProject({ projectId: project.id, planId: plan.id }),
+    async () => createRunForProject({ orgId: "org_local", projectId: project.id, planId: plan.id }),
     /durable configured persistence/
   );
   Object.assign(process.env, { NODE_ENV: "test" });

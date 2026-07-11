@@ -25,9 +25,10 @@ async function seed() {
   const { createProject, createPlanForProject, seedMockCredentials } = await import("@/lib/foundry/service");
   const { createRunRecord, insertRecord } = await import("@/lib/foundry/store");
 
-  const project = await createProject({ name: "Recovery Proof", prompt: "Launch recovery proof app on Vercel" });
+  const project = await createProject({ orgId: "org_local", name: "Recovery Proof", prompt: "Launch recovery proof app on Vercel" });
   await seedMockCredentials(project.id);
   const { plan } = await createPlanForProject({
+    orgId: "org_local",
     projectId: project.id,
     prompt: project.prompt,
     draftPlan: {

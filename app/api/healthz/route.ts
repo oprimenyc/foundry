@@ -15,6 +15,6 @@ export async function GET() {
     auth: authMode(),
     persistence: persistence.mode,
     production_safe_persistence: persistence.productionSafe,
-    log_bus: process.env.REDIS_URL ? "redis" : "memory",
+    events: "durable-store",
   });
 }

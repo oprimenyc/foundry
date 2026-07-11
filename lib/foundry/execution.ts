@@ -1,5 +1,4 @@
 import { SagaOrchestrator } from "@/lib/orchestration/saga";
-import { getLogBus } from "@/lib/logs/bus";
 import { createEvidenceRecord, createEventRecord, createRollbackRecord, createStepRecord, getStoreSnapshot, insertRecord, updateRecords } from "./store";
 import { getProviderAdapter, ProviderError, type ProviderAdapter, type ProviderExecutionInput, type ProviderExecutionResult } from "./providers";
 import { toExecutionPlan } from "./plan";
@@ -39,10 +38,6 @@ async function appendEvent(context: ExecutionContext, partial: Omit<ExecutionEve
     ...partial,
   });
   await insertRecord("events", event);
-  await getLogBus().publish(context.run.id, {
-    type: event.status === "failed" ? "error" : event.status === "completed" || event.status === "rolled_back" ? "done" : "log",
-    message: JSON.stringify(event),
-  });
 }
 
 async function updateRun(runId: string, updater: (run: DeploymentRunRecord) => DeploymentRunRecord) {

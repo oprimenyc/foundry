@@ -1,7 +1,7 @@
 import { SagaOrchestrator } from "@/lib/orchestration/saga";
 import { getLogBus } from "@/lib/logs/bus";
 import { createEvidenceRecord, createEventRecord, createRollbackRecord, createStepRecord, getStoreSnapshot, insertRecord, updateRecords } from "./store";
-import { getProviderAdapter } from "./providers";
+import { getProviderAdapter, ProviderError, type ProviderAdapter, type ProviderExecutionInput, type ProviderExecutionResult } from "./providers";
 import { toExecutionPlan } from "./plan";
 import type {
   DeploymentPlanRecord,
@@ -54,11 +54,45 @@ async function updateStep(stepId: string, updater: (step: DeploymentStepRecord) 
 }
 
 function mapFailureCategory(error: unknown): FailureCategory {
+  if (error instanceof ProviderError) return error.category;
   const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
   if (message.includes("cancel")) return "cancelled";
+  if (message.includes("timed out")) return "timeout";
   if (message.includes("validation")) return "validation";
   if (message.includes("rollback")) return "rollback";
   return "provider";
+}
+
+function isRetryable(error: unknown): boolean {
+  return error instanceof ProviderError && error.retryable;
+}
+
+async function executeWithTimeout(
+  adapter: ProviderAdapter,
+  action: Parameters<ProviderAdapter["execute"]>[0],
+  input: ProviderExecutionInput,
+  timeoutMs: number
+): Promise<ProviderExecutionResult> {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      adapter.execute(action, input),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () =>
+            reject(
+              new ProviderError(`${adapter.provider}.${action} timed out after ${timeoutMs}ms`, {
+                retryable: true,
+                category: "timeout",
+              })
+            ),
+          timeoutMs
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function startRunExecution(runId: string) {
@@ -164,13 +198,45 @@ export async function executeRun(runId: string) {
         });
 
         const adapter = getProviderAdapter(planStep.provider);
-        const result = await adapter.execute(planStep.action, {
+        const executionInput: ProviderExecutionInput = {
           runId: ctx.run.id,
           stepId: stepRecord.id,
           projectId: ctx.project.id,
           config: planStep.config,
           providerReferences: ctx.providerReferences,
-        });
+        };
+
+        let result: ProviderExecutionResult | undefined;
+        let attempt = 0;
+        // First attempt plus up to retryLimit retries for retryable failures.
+        for (;;) {
+          try {
+            result = await executeWithTimeout(adapter, planStep.action, executionInput, planStep.timeoutMs);
+            break;
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (!isRetryable(error) || attempt >= planStep.retryLimit) {
+              await updateStep(stepRecord.id, (current) => ({ ...current, status: "failed" }));
+              await appendEvent(ctx, {
+                stepId: stepRecord.id,
+                stage: "step",
+                status: "failed",
+                provider: planStep.provider,
+                sanitizedMessage: `${planStep.provider}.${planStep.action} failed after ${attempt + 1} attempt(s): ${message}`,
+              });
+              throw error;
+            }
+            attempt += 1;
+            await updateStep(stepRecord.id, (current) => ({ ...current, retryCount: attempt }));
+            await appendEvent(ctx, {
+              stepId: stepRecord.id,
+              stage: "step",
+              status: "info",
+              provider: planStep.provider,
+              sanitizedMessage: `Retrying ${planStep.provider}.${planStep.action} (attempt ${attempt + 1}/${planStep.retryLimit + 1}) after retryable failure: ${message}`,
+            });
+          }
+        }
 
         if (planStep.provider === "github") {
           ctx.providerReferences.githubRepoUrl = String(result.output.repoUrl || "");

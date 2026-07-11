@@ -8,7 +8,7 @@ import { getSecretsService } from "@/lib/foundry/credentials";
 import { getStoreSnapshot, resetFoundryPersistence } from "@/lib/foundry/store";
 import { POST as createProjectRoute } from "@/app/api/projects/route";
 import { GET as healthzRoute } from "@/app/api/healthz/route";
-import { getProviderAdapter, listRegisteredProviders, registerProviderAdapter, type ProviderAdapter } from "@/lib/foundry/providers";
+import { getProviderAdapter, listRegisteredProviders, registerProviderAdapter, ProviderError, type ProviderAdapter } from "@/lib/foundry/providers";
 import { ProviderRegistry, UnknownProviderError, DuplicateProviderError } from "@/lib/foundry/registry";
 
 const testDir = path.join(process.cwd(), ".foundry-test-data");
@@ -283,6 +283,116 @@ test("missing production master key fails closed for secret initialization", asy
   const health = await persistenceHealth();
   assert.equal(health.productionSafe, false);
   Object.assign(process.env, { NODE_ENV: "test" });
+});
+
+function retryPlan(provider: string) {
+  return {
+    config: { name: "Retry App", hosting: "vercel", repository: "retry-repo" },
+    budget: { maxSteps: 5, maxRuntimeMs: 120000 },
+    steps: [
+      {
+        id: "github-create",
+        provider: "github",
+        action: "create_repository",
+        name: "Create repo",
+        dependsOn: [],
+        config: { repositoryName: "retry-repo" },
+        timeoutMs: 15000,
+        retryLimit: 1,
+        rollbackAction: "create_repository",
+      },
+      {
+        id: "flaky-step",
+        provider,
+        action: "create_project",
+        name: "Flaky provider step",
+        dependsOn: ["github-create"],
+        config: { projectName: "retry-app", credentialRef: "secret:vercel/deployment" },
+        timeoutMs: 500,
+        retryLimit: 2,
+      },
+    ],
+  };
+}
+
+test("retryable provider failure is retried and the run completes with retry evidence", async () => {
+  await resetEnv("retry-success");
+  let attempts = 0;
+  const providerId = `flaky-then-ok-${randomUUIDForTest()}`;
+  registerProviderAdapter({
+    provider: providerId,
+    capability: "deployment",
+    actions: ["create_project"],
+    async execute() {
+      attempts += 1;
+      if (attempts < 3) {
+        throw new ProviderError("transient upstream 503", { retryable: true, category: "provider" });
+      }
+      return { providerReference: "flaky-ref", output: { projectId: "flaky-project" } };
+    },
+  });
+  const project = await createProject({ name: "Retry Success", prompt: "Launch retry app on Vercel" });
+  await seedMockCredentials(project.id);
+  const { plan } = await createPlanForProject({ projectId: project.id, prompt: project.prompt, draftPlan: retryPlan(providerId) });
+  assert.equal(plan.status, "validated");
+  const run = await createRunForProject({ projectId: project.id, planId: plan.id, idempotencyKey: "retry-ok" });
+  const terminal = await waitForTerminal(run.id);
+  assert.equal(terminal.status, "completed");
+  assert.equal(attempts, 3);
+  const snapshot = await getStoreSnapshot();
+  const step = snapshot.steps.find((item) => item.runId === run.id && item.planStepId === "flaky-step");
+  assert.equal(step?.retryCount, 2);
+  const retryEvents = snapshot.events.filter((event) => event.runId === run.id && event.sanitizedMessage.startsWith("Retrying"));
+  assert.equal(retryEvents.length, 2);
+});
+
+test("step timeout is enforced, classified, and exhausts retries into run failure", async () => {
+  await resetEnv("retry-timeout");
+  let attempts = 0;
+  const providerId = `hangs-forever-${randomUUIDForTest()}`;
+  registerProviderAdapter({
+    provider: providerId,
+    capability: "deployment",
+    actions: ["create_project"],
+    async execute() {
+      attempts += 1;
+      await new Promise((resolve) => setTimeout(resolve, 60000));
+      return { providerReference: "never", output: {} };
+    },
+  });
+  const project = await createProject({ name: "Timeout", prompt: "Launch timeout app on Vercel" });
+  await seedMockCredentials(project.id);
+  const { plan } = await createPlanForProject({ projectId: project.id, prompt: project.prompt, draftPlan: retryPlan(providerId) });
+  const run = await createRunForProject({ projectId: project.id, planId: plan.id, idempotencyKey: "retry-timeout" });
+  const terminal = await waitForTerminal(run.id, 15000);
+  assert.equal(terminal.status, "failed");
+  assert.equal(terminal.failureCategory, "timeout");
+  assert.equal(attempts, 3); // initial attempt + retryLimit 2
+  const snapshot = await getStoreSnapshot();
+  const failedEvents = snapshot.events.filter((event) => event.runId === run.id && event.status === "failed");
+  assert.ok(failedEvents.some((event) => event.sanitizedMessage.includes("timed out after 500ms")));
+});
+
+test("non-retryable provider failure is not retried", async () => {
+  await resetEnv("no-retry");
+  let attempts = 0;
+  const providerId = `hard-fail-${randomUUIDForTest()}`;
+  registerProviderAdapter({
+    provider: providerId,
+    capability: "deployment",
+    actions: ["create_project"],
+    async execute() {
+      attempts += 1;
+      throw new ProviderError("invalid credentials", { retryable: false, category: "provider" });
+    },
+  });
+  const project = await createProject({ name: "No Retry", prompt: "Launch no-retry app on Vercel" });
+  await seedMockCredentials(project.id);
+  const { plan } = await createPlanForProject({ projectId: project.id, prompt: project.prompt, draftPlan: retryPlan(providerId) });
+  const run = await createRunForProject({ projectId: project.id, planId: plan.id, idempotencyKey: "no-retry" });
+  const terminal = await waitForTerminal(run.id);
+  assert.equal(terminal.status, "failed");
+  assert.equal(attempts, 1);
 });
 
 test("sqlite persistence: full mocked deployment completes and survives process-level reset", async () => {

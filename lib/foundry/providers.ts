@@ -31,6 +31,23 @@ export interface ProviderAdapter {
   compensate?(action: ProviderAction, input: ProviderCompensationInput): Promise<void>;
 }
 
+/**
+ * Normalized provider failure. Adapters may throw this to control retry
+ * behavior; unclassified errors are treated as non-retryable provider
+ * failures by the execution policy.
+ */
+export class ProviderError extends Error {
+  readonly retryable: boolean;
+  readonly category: "provider" | "timeout" | "validation";
+
+  constructor(message: string, options: { retryable?: boolean; category?: "provider" | "timeout" | "validation" } = {}) {
+    super(message);
+    this.name = "ProviderError";
+    this.retryable = options.retryable ?? false;
+    this.category = options.category ?? "provider";
+  }
+}
+
 class MockGitHubAdapter implements ProviderAdapter {
   provider = "github";
   capability = "repository" as const;

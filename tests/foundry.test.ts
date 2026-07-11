@@ -7,6 +7,7 @@ import { executeRun, requestRollback, resumeIncompleteRuns } from "@/lib/foundry
 import { getSecretsService } from "@/lib/foundry/credentials";
 import { getStoreSnapshot, resetFoundryPersistence } from "@/lib/foundry/store";
 import { POST as createProjectRoute } from "@/app/api/projects/route";
+import { POST as sessionLoginRoute } from "@/app/api/auth/session/route";
 import { GET as healthzRoute } from "@/app/api/healthz/route";
 import { getProviderAdapter, listRegisteredProviders, registerProviderAdapter, ProviderError, type ProviderAdapter } from "@/lib/foundry/providers";
 import { ProviderRegistry, UnknownProviderError, DuplicateProviderError } from "@/lib/foundry/registry";
@@ -15,6 +16,7 @@ const testDir = path.join(process.cwd(), ".foundry-test-data");
 
 async function resetEnv(name: string, mode: "file" | "sqlite" = "file") {
   process.env.FOUNDRY_MASTER_KEY = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+  delete process.env.FOUNDRY_API_TOKEN;
   process.env.FOUNDRY_PERSISTENCE = mode;
   process.env.FOUNDRY_STORE_FILE = path.join(testDir, `${name}.json`);
   process.env.FOUNDRY_SQLITE_FILE = path.join(testDir, `${name}.sqlite`);
@@ -274,6 +276,79 @@ test("existing mocked github/vercel providers still resolve through the registry
 function randomUUIDForTest() {
   return Math.random().toString(36).slice(2);
 }
+
+test("API routes require auth when FOUNDRY_API_TOKEN is set; bearer and session cookie both work", async () => {
+  await resetEnv("auth-routes");
+  process.env.FOUNDRY_API_TOKEN = "test-api-token-0123456789";
+  const payload = { name: "Auth Test", prompt: "Launch auth test app on Vercel" };
+
+  const anonymous = await createProjectRoute(
+    new Request("http://localhost/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }) as any
+  );
+  assert.equal(anonymous.status, 401);
+
+  const bearer = await createProjectRoute(
+    new Request("http://localhost/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer test-api-token-0123456789" },
+      body: JSON.stringify(payload),
+    }) as any
+  );
+  assert.equal(bearer.status, 201);
+
+  const cookie = await createProjectRoute(
+    new Request("http://localhost/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: "foundry_session=test-api-token-0123456789" },
+      body: JSON.stringify(payload),
+    }) as any
+  );
+  assert.equal(cookie.status, 201);
+});
+
+test("session login validates the token and sets an httpOnly cookie", async () => {
+  await resetEnv("auth-session");
+  process.env.FOUNDRY_API_TOKEN = "test-api-token-0123456789";
+
+  const bad = await sessionLoginRoute(
+    new Request("http://localhost/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: "wrong-token" }),
+    }) as any
+  );
+  assert.equal(bad.status, 401);
+
+  const good = await sessionLoginRoute(
+    new Request("http://localhost/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: "test-api-token-0123456789" }),
+    }) as any
+  );
+  assert.equal(good.status, 200);
+  const setCookie = good.headers.get("set-cookie") || "";
+  assert.match(setCookie, /foundry_session=/);
+  assert.match(setCookie, /HttpOnly/i);
+});
+
+test("production API fails closed when FOUNDRY_API_TOKEN is missing", async () => {
+  await resetEnv("auth-prod");
+  Object.assign(process.env, { NODE_ENV: "production" });
+  const res = await createProjectRoute(
+    new Request("http://localhost/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Prod Auth", prompt: "Launch prod auth app on Vercel" }),
+    }) as any
+  );
+  assert.equal(res.status, 503);
+  Object.assign(process.env, { NODE_ENV: "test" });
+});
 
 test("missing production master key fails closed for secret initialization", async () => {
   await resetEnv("master-key");

@@ -4,6 +4,8 @@
 // Exits non-zero on any failure.
 
 const BASE = process.env.BASE_URL || "http://localhost:3000";
+const TOKEN = process.env.FOUNDRY_API_TOKEN || "";
+const AUTH = TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {};
 let failures = 0;
 
 async function check(name, fn) {
@@ -42,10 +44,23 @@ await check("GET /projects/new serves the planner UI", async () => {
   expect(ct.includes("text/html"), `expected HTML, got ${ct}`);
 });
 
-await check("POST /api/plan rejects bad body with 400", async () => {
+await check("unauthenticated POST /api/plan is rejected when auth is enforced", async () => {
   const res = await fetch(`${BASE}/api/plan`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt: "Deploy a Next.js site to Vercel." }),
+  });
+  if (TOKEN) {
+    expect(res.status === 401, `expected 401, got ${res.status}`);
+  } else {
+    expect(res.status !== 401, `unexpected 401 with no token configured`);
+  }
+});
+
+await check("POST /api/plan rejects bad body with 400", async () => {
+  const res = await fetch(`${BASE}/api/plan`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...AUTH },
     body: JSON.stringify({ prompt: "short" }),
   });
   expect(res.status === 400, `expected 400, got ${res.status}`);
@@ -54,7 +69,7 @@ await check("POST /api/plan rejects bad body with 400", async () => {
 await check("POST /api/plan without API key returns 503 JSON (or 200 if key set)", async () => {
   const res = await fetch(`${BASE}/api/plan`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...AUTH },
     body: JSON.stringify({ prompt: "Deploy a Next.js site to Vercel with a Supabase backend." }),
   });
   expect(res.status === 200 || res.status === 503 || res.status === 502, `unexpected status ${res.status}`);
@@ -68,7 +83,7 @@ await check("POST /api/plan without API key returns 503 JSON (or 200 if key set)
 
 await check("GET /api/projects/:id/runs/:runId/logs streams SSE", async () => {
   const controller = new AbortController();
-  const res = await fetch(`${BASE}/api/projects/smoke-test/runs/smoke-run/logs`, { signal: controller.signal });
+  const res = await fetch(`${BASE}/api/projects/smoke-test/runs/smoke-run/logs`, { signal: controller.signal, headers: { ...AUTH } });
   expect(res.ok, `status ${res.status}`);
   const ct = res.headers.get("content-type") || "";
   expect(ct.includes("text/event-stream"), `expected SSE, got ${ct}`);

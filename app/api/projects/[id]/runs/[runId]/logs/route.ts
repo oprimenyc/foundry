@@ -1,8 +1,11 @@
+import { requireApiAuth } from "@/lib/foundry/auth";
 import { listRunEvents } from "@/lib/foundry/service";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request, { params }: { params: { id: string; runId: string } }) {
+  const denied = requireApiAuth(req);
+  if (denied) return denied;
   const encoder = new TextEncoder();
   let cursor = Number(req.headers.get("last-event-id") || "0");
 

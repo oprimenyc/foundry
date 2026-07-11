@@ -1,3 +1,4 @@
+import { requireApiAuth } from "@/lib/foundry/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { generateDeploymentPlan } from "@/lib/ai/planner";
@@ -7,6 +8,8 @@ export const dynamic = "force-dynamic";
 const BodySchema = z.object({ prompt: z.string().min(10).max(2000) });
 
 export async function POST(req: NextRequest) {
+  const denied = requireApiAuth(req);
+  if (denied) return denied;
   let body: unknown;
   try {
     body = await req.json();

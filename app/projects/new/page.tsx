@@ -21,7 +21,34 @@ export default function NewProjectPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
+  const [authRequired, setAuthRequired] = useState(false);
+  const [token, setToken] = useState("");
   const { logs } = useDeploymentStream(project?.id ?? null, run?.id ?? null);
+
+  // API calls that bounce with 401 flip the UI into the token prompt.
+  const guard = (res: Response) => {
+    if (res.status === 401) {
+      setAuthRequired(true);
+      setError("Authentication required — enter the Foundry API token.");
+      return true;
+    }
+    return false;
+  };
+
+  const handleLogin = async () => {
+    setError(null);
+    const res = await fetch("/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+    if (res.ok) {
+      setAuthRequired(false);
+      setToken("");
+    } else {
+      setError("Invalid token.");
+    }
+  };
 
   const handleGeneratePlan = async () => {
     setLoading(true);
@@ -34,6 +61,7 @@ export default function NewProjectPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: prompt.split(" ").slice(0, 4).join(" "), prompt }),
       });
+      if (guard(projectRes)) return;
       const projectBody = await projectRes.json();
       if (!projectRes.ok) {
         setError(projectBody.error ?? `Project creation failed (${projectRes.status})`);
@@ -69,6 +97,7 @@ export default function NewProjectPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ planId: plan.id }),
       });
+      if (guard(res)) return;
       const body = await res.json();
       if (!res.ok) {
         setError(body.error ?? `Run creation failed (${res.status})`);
@@ -139,6 +168,21 @@ export default function NewProjectPage() {
           <p className="mt-6 text-center text-sm text-red-400" role="alert">
             {error}
           </p>
+        )}
+
+        {authRequired && (
+          <div className="mt-6 flex justify-center gap-3">
+            <input
+              type="password"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="Foundry API token"
+              className="glass rounded-xl px-4 py-2 text-neutral-100 placeholder-neutral-500 focus:outline-none"
+            />
+            <MagneticButton onClick={handleLogin} className="bg-gradient-to-r from-cyan-500 to-violet-500 text-white">
+              Sign in
+            </MagneticButton>
+          </div>
         )}
 
         <AnimatePresence mode="wait">

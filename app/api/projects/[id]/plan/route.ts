@@ -1,3 +1,4 @@
+import { requireApiAuth } from "@/lib/foundry/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createPlanForProject } from "@/lib/foundry/service";
@@ -8,6 +9,8 @@ const BodySchema = z.object({
 });
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const denied = requireApiAuth(req);
+  if (denied) return denied;
   const body = await req.json().catch(() => null);
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {

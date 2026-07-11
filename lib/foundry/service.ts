@@ -187,6 +187,7 @@ export async function getRunView(projectId: string, runId: string, orgId?: strin
     run,
     steps: snapshot.steps.filter((step) => step.runId === runId),
     evidence: snapshot.evidence.filter((item) => item.runId === runId),
+    verifications: snapshot.verifications.filter((item) => item.runId === runId),
   };
 }
 

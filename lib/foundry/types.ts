@@ -163,6 +163,23 @@ export interface DeploymentRunRecord {
   cancellationRequestedAt?: string;
 }
 
+/**
+ * Independent verification result. Strictly separate from adapter execution
+ * results and Foundry run status: a run is never "externally verified" merely
+ * because its own adapter returned success. E.V.E. or any external verifier
+ * consumes/produces these records.
+ */
+export interface VerificationRecord {
+  id: string;
+  runId: string;
+  target: { kind: "deployment_url" | "repository_url"; reference: string };
+  status: "passed" | "failed";
+  detail: string;
+  attempt: number;
+  checkedAt: string;
+  verifierVersion: string;
+}
+
 export interface FoundryStore {
   projects: ProjectRecord[];
   plans: DeploymentPlanRecord[];
@@ -172,4 +189,5 @@ export interface FoundryStore {
   events: ExecutionEventRecord[];
   rollbacks: RollbackActionRecord[];
   evidence: LaunchEvidenceRecord[];
+  verifications: VerificationRecord[];
 }

@@ -11,6 +11,8 @@ import { POST as sessionLoginRoute } from "@/app/api/auth/session/route";
 import { POST as cancelRoute } from "@/app/api/projects/[id]/runs/[runId]/cancel/route";
 import { GET as runViewRoute } from "@/app/api/projects/[id]/runs/[runId]/route";
 import { GET as runLogsRoute } from "@/app/api/projects/[id]/runs/[runId]/logs/route";
+import { POST as verifyRoutePost } from "@/app/api/projects/[id]/runs/[runId]/verify/route";
+import { getVerificationView, verifyRunIndependently } from "@/lib/foundry/verification";
 import { GET as healthzRoute } from "@/app/api/healthz/route";
 import { getProviderAdapter, listRegisteredProviders, registerProviderAdapter, ProviderError, VercelHttpAdapter, GitHubHttpAdapter, type ProviderAdapter } from "@/lib/foundry/providers";
 import { VercelAdapter as VercelClient } from "@/lib/providers/vercel.adapter";
@@ -714,6 +716,66 @@ test("malformed FOUNDRY_PRINCIPALS fails closed: nobody authenticates", async ()
   } finally {
     Object.assign(process.env, { NODE_ENV: "test" });
   }
+});
+
+test("independent verification is separate from run status and retryable without altering history", async () => {
+  await resetEnv("verify-independent", "sqlite");
+  const project = await createProject({ orgId: "org_local", name: "Verify App", prompt: "Launch verify app on Vercel" });
+  await seedMockCredentials(project.id);
+  const { plan } = await createPlanForProject({ orgId: "org_local", projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
+  const run = await createRunForProject({ orgId: "org_local", projectId: project.id, planId: plan.id, idempotencyKey: "verify-key" });
+  const terminal = await waitForTerminal(run.id);
+  assert.equal(terminal.status, "completed");
+
+  const before = await getStoreSnapshot();
+  const runsBefore = JSON.stringify(before.runs);
+  const eventsBefore = JSON.stringify(before.events);
+
+  // Attempt 1: the outside world says the deployment is NOT reachable.
+  await verifyRunIndependently(run.id, { fetchImpl: async () => ({ ok: false, status: 503 }) });
+  let view = await getVerificationView(run.id);
+  assert.equal(view.independentlyVerified, false);
+  assert.ok(view.latest.every((item) => item.status === "failed"));
+
+  // Adapter success + verification failure must NOT read as fully verified,
+  // and the verifier must not have altered execution history.
+  const after = await getStoreSnapshot();
+  assert.equal(after.runs.find((item) => item.id === run.id)?.status, "completed");
+  assert.equal(JSON.stringify(after.runs), runsBefore);
+  assert.equal(JSON.stringify(after.events), eventsBefore);
+
+  // Attempt 2: independent retry passes; history keeps both attempts.
+  await verifyRunIndependently(run.id, { fetchImpl: async () => ({ ok: true, status: 200 }) });
+  view = await getVerificationView(run.id);
+  assert.equal(view.independentlyVerified, true);
+  assert.equal(Math.max(...view.records.map((item) => item.attempt)), 2);
+  assert.ok(view.records.length > view.latest.length);
+  assert.ok(view.records.every((item) => typeof item.checkedAt === "string" && item.checkedAt.length > 0));
+
+  // Verification evidence survives a process-level persistence reset.
+  resetFoundryPersistence();
+  const persisted = await getVerificationView(run.id);
+  assert.equal(persisted.independentlyVerified, true);
+  assert.equal(persisted.records.length, view.records.length);
+});
+
+test("verification route enforces org scope", async () => {
+  await resetEnv("verify-scope");
+  setTwoOrgPrincipals();
+  const project = await createProject({ orgId: "org_a", name: "Verify Scope", prompt: "Launch verify scope app on Vercel" });
+  await seedMockCredentials(project.id, "org_a");
+  const { plan } = await createPlanForProject({ orgId: "org_a", projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
+  const run = await createRunForProject({ orgId: "org_a", projectId: project.id, planId: plan.id, idempotencyKey: "verify-scope" });
+  await waitForTerminal(run.id);
+
+  const crossOrg = await verifyRoutePost(
+    new Request(`http://localhost/api/projects/${project.id}/runs/${run.id}/verify`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${ORG_B_TOKEN}` },
+    }) as any,
+    { params: { id: project.id, runId: run.id } }
+  );
+  assert.equal(crossOrg.status, 404);
 });
 
 test("missing production master key fails closed for secret initialization", async () => {

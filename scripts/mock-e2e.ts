@@ -1,6 +1,7 @@
 import { rm } from "fs/promises";
 import { createProject, createPlanForProject, createRunForProject, getRunView, seedMockCredentials } from "@/lib/foundry/service";
 import { getStoreSnapshot, resetFoundryPersistence } from "@/lib/foundry/store";
+import { getVerificationView, verifyRunIndependently } from "@/lib/foundry/verification";
 import { requestRollback } from "@/lib/foundry/execution";
 
 function validDraftPlan() {
@@ -98,6 +99,11 @@ async function main() {
   const terminal = await waitForTerminal(run.id);
   const view = await getRunView(project.id, run.id);
 
+  // Independent verification slice: stubbed external check (mock URLs are not
+  // routable); live verification is credential/DNS-bound, not code-bound.
+  await verifyRunIndependently(run.id, { fetchImpl: async () => ({ ok: true, status: 200 }) });
+  const verification = await getVerificationView(run.id);
+
   const rollbackRun = await createRunForProject({ orgId: "org_local", projectId: project.id, planId: plan.id, idempotencyKey: "rollback-proof-run" });
   await waitForTerminal(rollbackRun.id);
   await requestRollback(rollbackRun.id);
@@ -114,6 +120,8 @@ async function main() {
         deploymentUrl: view?.run.providerReferences.vercelDeploymentUrl ?? null,
         githubRepoUrl: view?.run.providerReferences.githubRepoUrl ?? null,
         eventCount: (await getStoreSnapshot()).events.filter((event) => event.runId === run.id).length,
+        independentlyVerified: verification.independentlyVerified,
+        verificationTargets: verification.latest.map((item) => item.target.kind),
         rollbackRunId: rollbackRun.id,
         rollbackStatus: rolledBack.status,
       },

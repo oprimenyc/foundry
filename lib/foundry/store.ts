@@ -23,7 +23,16 @@ const DEFAULT_STORE: FoundryStore = {
   events: [],
   rollbacks: [],
   evidence: [],
+  verifications: [],
 };
+
+/** Backward compatibility: stores persisted before a collection existed gain it as empty. */
+function normalizeStore(raw: FoundryStore): FoundryStore {
+  for (const key of Object.keys(DEFAULT_STORE) as CollectionKey[]) {
+    if (!Array.isArray(raw[key])) (raw as unknown as Record<string, unknown>)[key] = [];
+  }
+  return raw;
+}
 
 type CollectionKey = keyof FoundryStore;
 
@@ -65,7 +74,7 @@ class FilePersistence implements FoundryPersistence {
   private async readRaw(): Promise<FoundryStore> {
     await this.ensureFile();
     const raw = await readFile(this.filePath, "utf8");
-    return JSON.parse(raw) as FoundryStore;
+    return normalizeStore(JSON.parse(raw) as FoundryStore);
   }
 
   async write(mutator: (draft: FoundryStore) => void): Promise<FoundryStore> {
@@ -131,7 +140,7 @@ class SqlitePersistence implements FoundryPersistence {
   private readRaw(): FoundryStore {
     const row = this.db.prepare("SELECT data FROM foundry_store WHERE id = 1").get() as { data: string } | undefined;
     if (!row) throw new Error("SQLite store row missing — store not initialized");
-    return JSON.parse(row.data) as FoundryStore;
+    return normalizeStore(JSON.parse(row.data) as FoundryStore);
   }
 
   async write(mutator: (draft: FoundryStore) => void): Promise<FoundryStore> {

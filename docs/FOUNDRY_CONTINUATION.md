@@ -34,7 +34,16 @@ BASE_URL=http://localhost:3113 FOUNDRY_API_TOKEN=smoke-test-token-0123456789 nod
 # crash recovery proof: see scripts/crash-recovery-proof.ts header
 ```
 
-## Next milestones, in priority order
+## Status 2026-07-11 (second loop)
+
+Milestones 9-14 are complete: real GitHub adapter, org tenancy, durable-event
+consolidation, independent verification, domain expansion (dns/email/payments/
+telephony/storage) with launch profiles, and final gate proofs. 41/41 tests.
+All remaining work is credential-blocked live proving or demand-deferred
+(production object store, CoS approval workflow, multi-instance persistence).
+See FOUNDRY_PROVIDER_MATRIX.md and the completion ledger.
+
+## Next milestones, in priority order (historical — superseded above)
 
 1. ~~Cancellation regression coverage~~ — done (`34d71bf`).
 2. ~~Live Vercel deployment actions~~ — implemented with stubbed-transport

@@ -81,13 +81,9 @@ await check("POST /api/plan without API key returns 503 JSON (or 200 if key set)
   }
 });
 
-await check("GET /api/projects/:id/runs/:runId/logs streams SSE", async () => {
-  const controller = new AbortController();
-  const res = await fetch(`${BASE}/api/projects/smoke-test/runs/smoke-run/logs`, { signal: controller.signal, headers: { ...AUTH } });
-  expect(res.ok, `status ${res.status}`);
-  const ct = res.headers.get("content-type") || "";
-  expect(ct.includes("text/event-stream"), `expected SSE, got ${ct}`);
-  controller.abort();
+await check("GET run-logs SSE is org-scoped: unknown run returns 404, not a stream", async () => {
+  const res = await fetch(`${BASE}/api/projects/smoke-test/runs/smoke-run/logs`, { headers: { ...AUTH } });
+  expect(res.status === 404, `expected 404 for unknown run, got ${res.status}`);
 });
 
 console.log(failures === 0 ? "\nSMOKE: ALL PASS" : `\nSMOKE: ${failures} FAILURE(S)`);

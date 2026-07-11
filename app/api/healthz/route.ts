@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { persistenceHealth } from "@/lib/foundry/service";
 import { authMode } from "@/lib/foundry/auth";
+import { mocksExplicitlyAllowed } from "@/lib/foundry/providers";
 
 export const dynamic = "force-dynamic";
 
@@ -16,5 +17,7 @@ export async function GET() {
     persistence: persistence.mode,
     production_safe_persistence: persistence.productionSafe,
     events: "durable-store",
+    mock_providers:
+      process.env.NODE_ENV !== "production" ? "dev" : mocksExplicitlyAllowed() ? "ALLOWED-EXPLICIT-TEST-MODE" : "production-locked",
   });
 }

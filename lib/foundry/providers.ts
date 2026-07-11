@@ -61,8 +61,15 @@ export class ProviderError extends Error {
  * selected when the real credential is absent, and in production that
  * combination fails closed instead of fabricating provider results.
  */
+export function mocksExplicitlyAllowed(): boolean {
+  // Loud, deliberate opt-in for test harnesses running production builds
+  // (e.g. crash-recovery proof under `next start`). Reported by /api/healthz —
+  // it can never be a silent fallback.
+  return process.env.FOUNDRY_ALLOW_MOCKS === "explicit-test-mode";
+}
+
 function assertMockAllowed(provider: string) {
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === "production" && !mocksExplicitlyAllowed()) {
     throw new ProviderError(
       `mock ${provider} provider is disabled in production — configure the real provider credential`,
       { category: "validation" }

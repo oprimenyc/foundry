@@ -10,8 +10,10 @@ import { POST as createProjectRoute } from "@/app/api/projects/route";
 import { POST as sessionLoginRoute } from "@/app/api/auth/session/route";
 import { POST as cancelRoute } from "@/app/api/projects/[id]/runs/[runId]/cancel/route";
 import { GET as healthzRoute } from "@/app/api/healthz/route";
-import { getProviderAdapter, listRegisteredProviders, registerProviderAdapter, ProviderError, VercelHttpAdapter, type ProviderAdapter } from "@/lib/foundry/providers";
+import { getProviderAdapter, listRegisteredProviders, registerProviderAdapter, ProviderError, VercelHttpAdapter, GitHubHttpAdapter, type ProviderAdapter } from "@/lib/foundry/providers";
 import { VercelAdapter as VercelClient } from "@/lib/providers/vercel.adapter";
+import { GitHubAdapter as GitHubClient } from "@/lib/providers/github.adapter";
+import { ProviderError as HttpProviderError } from "@/lib/providers/http-client";
 import { ProviderRegistry, UnknownProviderError, DuplicateProviderError } from "@/lib/foundry/registry";
 
 const testDir = path.join(process.cwd(), ".foundry-test-data");
@@ -347,6 +349,123 @@ test("live Vercel adapter compensates trigger_deployment by cancelling the deplo
   assert.equal(calls.length, 1);
   assert.match(calls[0].url, /\/v12\/deployments\/dpl_123\/cancel$/);
   assert.equal(calls[0].options.method, "PATCH");
+});
+
+test("live GitHub adapter creates a repository and verifies it by read-back before reporting success", async () => {
+  const { calls, client } = stubHttp((url, options) => {
+    if (url.endsWith("/user/repos") && options.method === "POST") {
+      return { id: 42, full_name: "acme/new-repo", html_url: "https://github.com/acme/new-repo", default_branch: "main", private: true };
+    }
+    if (url.endsWith("/repos/acme/new-repo") && options.method === "GET") {
+      return { id: 42, full_name: "acme/new-repo", html_url: "https://github.com/acme/new-repo", default_branch: "main", private: true };
+    }
+    throw new Error(`unexpected url ${url}`);
+  });
+  const adapter = new GitHubHttpAdapter("fake-token", new GitHubClient("fake-token", client));
+  const result = await adapter.execute("create_repository", {
+    runId: "run1",
+    stepId: "step1",
+    projectId: "proj1",
+    config: { repositoryName: "new-repo" },
+    providerReferences: {},
+  });
+  assert.equal(calls.length, 2); // create + independent read-back
+  assert.equal(result.providerReference, "acme/new-repo");
+  assert.equal(result.output.repoUrl, "https://github.com/acme/new-repo");
+  assert.equal(result.output.defaultBranch, "main");
+  assert.equal(result.evidenceReference, "github:acme/new-repo#42");
+});
+
+test("live GitHub adapter rejects unsafe repository names and owners", async () => {
+  const { client } = stubHttp(() => ({}));
+  const adapter = new GitHubHttpAdapter("fake-token", new GitHubClient("fake-token", client));
+  await assert.rejects(
+    async () =>
+      adapter.execute("create_repository", {
+        runId: "r",
+        stepId: "s",
+        projectId: "p",
+        config: { repositoryName: "../../etc/passwd" },
+        providerReferences: {},
+      }),
+    /unsafe repository name/
+  );
+  await assert.rejects(async () => new GitHubClient("t", client).getRepository("a/b", "ok"), /unsafe repository owner/);
+});
+
+test("live GitHub adapter normalizes HTTP failures into classified provider errors", async () => {
+  const { client } = stubHttp(() => {
+    throw new HttpProviderError("Provider API error: 503", 503, {});
+  });
+  const adapter = new GitHubHttpAdapter("fake-token", new GitHubClient("fake-token", client));
+  const attempt = adapter.execute("verify_repository", {
+    runId: "r",
+    stepId: "s",
+    projectId: "p",
+    config: { repositoryFullName: "acme/app" },
+    providerReferences: {},
+  });
+  await assert.rejects(attempt, (error: unknown) => {
+    assert.ok(error instanceof ProviderError);
+    assert.equal(error.retryable, true);
+    assert.match(error.message, /github API error \(503\)/);
+    return true;
+  });
+
+  const { client: notFound } = stubHttp(() => {
+    throw new HttpProviderError("Provider API error: 404", 404, {});
+  });
+  const adapter404 = new GitHubHttpAdapter("fake-token", new GitHubClient("fake-token", notFound));
+  await assert.rejects(
+    adapter404.execute("verify_repository", {
+      runId: "r",
+      stepId: "s",
+      projectId: "p",
+      config: { repositoryFullName: "acme/missing" },
+      providerReferences: {},
+    }),
+    (error: unknown) => {
+      assert.ok(error instanceof ProviderError);
+      assert.equal(error.retryable, false);
+      return true;
+    }
+  );
+});
+
+test("live GitHub adapter compensates create_repository by deleting exactly the created repo", async () => {
+  const { calls, client } = stubHttp(() => undefined);
+  const adapter = new GitHubHttpAdapter("fake-token", new GitHubClient("fake-token", client));
+  await adapter.compensate("create_repository", {
+    runId: "r",
+    stepId: "s",
+    projectId: "p",
+    config: {},
+    providerReferences: {},
+    providerReference: "acme/new-repo",
+  });
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].url, /\/repos\/acme\/new-repo$/);
+  assert.equal(calls[0].options.method, "DELETE");
+});
+
+test("mock providers fail closed in production instead of fabricating results", async () => {
+  await resetEnv("mock-prod-guard");
+  Object.assign(process.env, { NODE_ENV: "production" });
+  try {
+    const github = getProviderAdapter("github");
+    await assert.rejects(
+      github.execute("create_repository", {
+        runId: "r",
+        stepId: "s",
+        projectId: "p",
+        config: { repositoryName: "x" },
+        providerReferences: {},
+      }),
+      /mock github provider is disabled in production/
+    );
+  } finally {
+    Object.assign(process.env, { NODE_ENV: "test" });
+  }
 });
 
 test("cancellation during an active run stops execution before the next step", async () => {

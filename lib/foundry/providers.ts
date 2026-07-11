@@ -2,6 +2,8 @@ import { randomUUID } from "crypto";
 import type { ProviderAction } from "./types";
 import { ProviderRegistry } from "./registry";
 import { VercelAdapter as VercelHttpClient } from "@/lib/providers/vercel.adapter";
+import { GitHubAdapter as GitHubHttpClient } from "@/lib/providers/github.adapter";
+import { ProviderError as HttpProviderError } from "@/lib/providers/http-client";
 
 export interface ProviderExecutionInput {
   runId: string;
@@ -48,6 +50,32 @@ export class ProviderError extends Error {
   }
 }
 
+/**
+ * Mocks never masquerade as live providers in production: they are only
+ * selected when the real credential is absent, and in production that
+ * combination fails closed instead of fabricating provider results.
+ */
+function assertMockAllowed(provider: string) {
+  if (process.env.NODE_ENV === "production") {
+    throw new ProviderError(
+      `mock ${provider} provider is disabled in production — configure the real provider credential`,
+      { category: "validation" }
+    );
+  }
+}
+
+/** Maps HTTP-layer failures to classified Foundry provider errors. */
+function normalizeHttpError(provider: string, error: unknown): never {
+  if (error instanceof HttpProviderError) {
+    const retryable = error.statusCode === 429 || error.statusCode >= 500;
+    throw new ProviderError(`${provider} API error (${error.statusCode}): ${error.message}`, {
+      retryable,
+      category: "provider",
+    });
+  }
+  throw error;
+}
+
 class MockGitHubAdapter implements ProviderAdapter {
   provider = "github";
   capability = "repository" as const;
@@ -55,6 +83,7 @@ class MockGitHubAdapter implements ProviderAdapter {
   private repos = new Map<string, ProviderExecutionResult>();
 
   async execute(action: ProviderAction, input: ProviderExecutionInput): Promise<ProviderExecutionResult> {
+    assertMockAllowed("github");
     if (action === "create_repository") {
       const key = `${input.runId}:${input.stepId}`;
       const existing = this.repos.get(key);
@@ -138,6 +167,7 @@ class MockVercelAdapter implements ProviderAdapter {
   private projects = new Map<string, ProviderExecutionResult>();
 
   async execute(action: ProviderAction, input: ProviderExecutionInput): Promise<ProviderExecutionResult> {
+    assertMockAllowed("vercel");
     const key = `${input.runId}:${input.stepId}`;
     if (action === "create_project") {
       const existing = this.projects.get(key);
@@ -184,6 +214,76 @@ class MockVercelAdapter implements ProviderAdapter {
   async compensate(action: ProviderAction, input: ProviderCompensationInput) {
     if (action === "create_project") {
       this.projects.delete(`${input.runId}:${input.stepId}`);
+    }
+  }
+}
+
+/**
+ * Real GitHub adapter behind the same registry contract as the mock. Only
+ * selected when GITHUB_TOKEN is configured. Success is never reported from
+ * the create call alone: the resulting repository is read back first.
+ */
+export class GitHubHttpAdapter implements ProviderAdapter {
+  provider = "github";
+  capability = "repository" as const;
+  actions: ProviderAction[] = ["create_repository", "verify_repository"];
+  private client: GitHubHttpClient;
+
+  constructor(apiToken: string, client?: GitHubHttpClient) {
+    this.client = client ?? new GitHubHttpClient(apiToken);
+  }
+
+  async execute(action: ProviderAction, input: ProviderExecutionInput): Promise<ProviderExecutionResult> {
+    try {
+      if (action === "create_repository") {
+        const name = String(input.config.repositoryName || input.config.projectName || "");
+        if (!name) throw new ProviderError("missing repositoryName", { category: "validation" });
+        const org = input.config.repositoryOwner ? String(input.config.repositoryOwner) : undefined;
+        const created = await this.client.createRepository({ name, org });
+        const [owner, repo] = created.full_name.split("/");
+        // Independent read-back: the repository must actually exist and be reachable.
+        const verified = await this.client.getRepository(owner, repo);
+        return {
+          providerReference: verified.full_name,
+          output: {
+            repoUrl: verified.html_url,
+            repositoryId: String(verified.id),
+            defaultBranch: verified.default_branch,
+            private: verified.private,
+          },
+          evidenceReference: `github:${verified.full_name}#${verified.id}`,
+        };
+      }
+      if (action === "verify_repository") {
+        const fromUrl = String(input.providerReferences.githubRepoUrl || "").replace(/^https:\/\/github\.com\//, "");
+        const fullName = String(input.config.repositoryFullName || fromUrl || "");
+        const [owner, repo] = fullName.split("/");
+        if (!owner || !repo) throw new ProviderError("missing repository reference to verify", { category: "validation" });
+        const found = await this.client.getRepository(owner, repo);
+        return {
+          providerReference: found.full_name,
+          output: { repoUrl: found.html_url, repositoryId: String(found.id), defaultBranch: found.default_branch, verified: true },
+          evidenceReference: `github:${found.full_name}#${found.id}`,
+        };
+      }
+      throw new ProviderError(`Unsupported GitHub action ${action}`, { category: "validation" });
+    } catch (error) {
+      if (error instanceof ProviderError) throw error;
+      normalizeHttpError("github", error);
+    }
+  }
+
+  async compensate(action: ProviderAction, input: ProviderCompensationInput) {
+    // Compensation deletes only the repository this run created (full_name is
+    // the providerReference recorded by create_repository).
+    if (action === "create_repository" && input.providerReference) {
+      const [owner, repo] = input.providerReference.split("/");
+      if (!owner || !repo) throw new ProviderError(`invalid repository reference "${input.providerReference}"`, { category: "validation" });
+      try {
+        await this.client.deleteRepository(owner, repo);
+      } catch (error) {
+        normalizeHttpError("github", error);
+      }
     }
   }
 }
@@ -266,7 +366,9 @@ export class VercelHttpAdapter implements ProviderAdapter {
 const repositoryRegistry = new ProviderRegistry<ProviderAdapter>("repository");
 const deploymentRegistry = new ProviderRegistry<ProviderAdapter>("deployment");
 
-repositoryRegistry.register(new MockGitHubAdapter());
+repositoryRegistry.register(
+  process.env.GITHUB_TOKEN ? new GitHubHttpAdapter(process.env.GITHUB_TOKEN) : new MockGitHubAdapter()
+);
 repositoryRegistry.register(new LocalGitAdapter());
 
 deploymentRegistry.register(

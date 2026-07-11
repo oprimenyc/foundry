@@ -14,7 +14,8 @@ import { GET as runLogsRoute } from "@/app/api/projects/[id]/runs/[runId]/logs/r
 import { POST as verifyRoutePost } from "@/app/api/projects/[id]/runs/[runId]/verify/route";
 import { getVerificationView, verifyRunIndependently } from "@/lib/foundry/verification";
 import { GET as healthzRoute } from "@/app/api/healthz/route";
-import { getProviderAdapter, listRegisteredProviders, registerProviderAdapter, ProviderError, VercelHttpAdapter, GitHubHttpAdapter, type ProviderAdapter } from "@/lib/foundry/providers";
+import { getProviderAdapter, listRegisteredProviders, registerProviderAdapter, ProviderError, VercelHttpAdapter, GitHubHttpAdapter, CloudflareDnsAdapter, ResendEmailAdapter, StripePaymentsAdapter, SignalWireTelephonyAdapter, listProviderMetadata, type ProviderAdapter } from "@/lib/foundry/providers";
+import { CloudflareAdapter as CloudflareClient, ResendAdapter as ResendClient, StripeAdapter as StripeClient, SignalWireAdapter as SignalWireClient } from "@/lib/providers/domains.adapter";
 import { VercelAdapter as VercelClient } from "@/lib/providers/vercel.adapter";
 import { GitHubAdapter as GitHubClient } from "@/lib/providers/github.adapter";
 import { ProviderError as HttpProviderError } from "@/lib/providers/http-client";
@@ -776,6 +777,161 @@ test("verification route enforces org scope", async () => {
     { params: { id: project.id, runId: run.id } }
   );
   assert.equal(crossOrg.status, 404);
+});
+
+test("Cloudflare DNS adapter creates a record with read-back and compensates by deletion", async () => {
+  const records = new Map<string, { id: string; type: string; name: string; content: string }>();
+  const { calls, client } = stubHttp((url, options) => {
+    if (options.method === "POST" && url.endsWith("/zones/zone1/dns_records")) {
+      const body = JSON.parse(String(options.body));
+      const record = { id: "rec1", type: body.type, name: body.name, content: body.content };
+      records.set("rec1", record);
+      return { result: record };
+    }
+    if (options.method === "GET" && url.endsWith("/zones/zone1/dns_records/rec1")) {
+      const record = records.get("rec1");
+      if (!record) throw new HttpProviderError("not found", 404, {});
+      return { result: record };
+    }
+    if (options.method === "DELETE" && url.endsWith("/zones/zone1/dns_records/rec1")) {
+      records.delete("rec1");
+      return { result: { id: "rec1" } };
+    }
+    throw new Error(`unexpected ${options.method} ${url}`);
+  });
+  const adapter = new CloudflareDnsAdapter("fake-token", new CloudflareClient("fake-token", client));
+  const created = await adapter.execute("create_dns_record", {
+    runId: "r",
+    stepId: "s",
+    projectId: "p",
+    config: { zoneId: "zone1", recordType: "CNAME", recordName: "app.example.com", recordContent: "cname.vercel-dns.com" },
+    providerReferences: {},
+  });
+  assert.equal(created.providerReference, "zone1/rec1");
+  assert.equal(created.output.name, "app.example.com");
+  assert.equal(calls.length, 2); // create + read-back
+
+  await adapter.compensate?.("create_dns_record", {
+    runId: "r",
+    stepId: "s",
+    projectId: "p",
+    config: {},
+    providerReferences: {},
+    providerReference: "zone1/rec1",
+  });
+  assert.equal(records.has("rec1"), false);
+  await assert.rejects(
+    adapter.execute("verify_dns_record", {
+      runId: "r",
+      stepId: "s",
+      projectId: "p",
+      config: { recordReference: "zone1/rec1" },
+      providerReferences: {},
+    }),
+    /cloudflare API error \(404\)/
+  );
+});
+
+test("Resend and SignalWire adapters send with correct request shape and declare no rollback", async () => {
+  const { calls, client } = stubHttp((url) => {
+    if (url.endsWith("/emails")) return { id: "email_1" };
+    if (url.includes("/Messages.json")) return { sid: "sms_1", status: "queued" };
+    throw new Error(`unexpected url ${url}`);
+  });
+  const email = new ResendEmailAdapter("fake-key", new ResendClient("fake-key", client));
+  const sent = await email.execute("send_email", {
+    runId: "r",
+    stepId: "s",
+    projectId: "p",
+    config: { emailFrom: "ops@foundry.dev", emailTo: "owner@example.com", emailSubject: "Launched", emailBody: "done" },
+    providerReferences: {},
+  });
+  assert.equal(sent.providerReference, "email_1");
+  assert.equal("compensate" in email, false); // email cannot be unsent
+
+  const sms = new SignalWireTelephonyAdapter("space.signalwire.com", "proj1", "fake-token", new SignalWireClient("space.signalwire.com", "proj1", "fake-token", client));
+  const result = await sms.execute("send_sms", {
+    runId: "r",
+    stepId: "s",
+    projectId: "p",
+    config: { smsFrom: "+15550001111", smsTo: "+15550002222", smsBody: "launch complete" },
+    providerReferences: {},
+  });
+  assert.equal(result.providerReference, "sms_1");
+  assert.equal("compensate" in sms, false); // SMS cannot be recalled
+  assert.equal(calls.length, 2);
+  const smsCall = calls[1];
+  assert.match(String(smsCall.options.body), /From=%2B15550001111/);
+});
+
+test("Stripe adapter creates + verifies a product and compensates by archiving", async () => {
+  let active = true;
+  const { calls, client } = stubHttp((url, options) => {
+    if (options.method === "POST" && url.endsWith("/products")) return { id: "prod_1", name: "DYLN Plan", active: true };
+    if (options.method === "GET" && url.endsWith("/products/prod_1")) return { id: "prod_1", name: "DYLN Plan", active };
+    if (options.method === "POST" && url.endsWith("/products/prod_1")) {
+      active = false;
+      return { id: "prod_1", active };
+    }
+    throw new Error(`unexpected ${options.method} ${url}`);
+  });
+  const adapter = new StripePaymentsAdapter("sk_test_fake", new StripeClient("sk_test_fake", client));
+  const created = await adapter.execute("create_product", {
+    runId: "r",
+    stepId: "s",
+    projectId: "p",
+    config: { productName: "DYLN Plan" },
+    providerReferences: {},
+  });
+  assert.equal(created.providerReference, "prod_1");
+  assert.equal(calls[0].options.headers && true, true);
+  await adapter.compensate?.("create_product", {
+    runId: "r",
+    stepId: "s",
+    projectId: "p",
+    config: {},
+    providerReferences: {},
+    providerReference: "prod_1",
+  });
+  assert.equal(active, false);
+});
+
+test("all capability domains are registered with declared actions and truthful mock flags", async () => {
+  await resetEnv("cap-metadata");
+  const metadata = listProviderMetadata();
+  for (const capability of ["repository", "deployment", "dns", "email", "payments", "telephony", "storage"]) {
+    assert.ok(Array.isArray(metadata[capability]) && metadata[capability].length > 0, `missing capability ${capability}`);
+    for (const entry of metadata[capability]) {
+      assert.ok(entry.actions.length > 0, `${entry.provider} declares no actions`);
+    }
+  }
+  // Without credentials configured, domain providers are truthfully marked mock.
+  assert.equal(metadata.dns.find((item) => item.provider === "cloudflare")?.mock, true);
+  // Plans requesting an undeclared action are rejected by registry validation.
+  const project = await createProject({ orgId: "org_local", name: "Cap Test", prompt: "Launch cap test app on Vercel" });
+  const { plan } = await createPlanForProject({
+    orgId: "org_local",
+    projectId: project.id,
+    prompt: project.prompt,
+    draftPlan: {
+      config: { name: "Cap", hosting: "vercel", repository: "cap-repo" },
+      budget: { maxSteps: 5, maxRuntimeMs: 120000 },
+      steps: [
+        {
+          id: "bad-action",
+          provider: "cloudflare",
+          action: "purchase_domain",
+          name: "Unsupported op",
+          dependsOn: [],
+          config: {},
+          timeoutMs: 5000,
+          retryLimit: 0,
+        },
+      ],
+    },
+  });
+  assert.equal(plan.status, "rejected");
+  assert.ok(plan.validationErrors.some((error) => error.includes("unsupported action purchase_domain")));
 });
 
 test("missing production master key fails closed for secret initialization", async () => {

@@ -20,12 +20,10 @@ export type RollbackStatus = "not_required" | "available" | "running" | "complet
 // Provider identity is an open string resolved through the provider registries
 // (lib/foundry/providers.ts) — Foundry never hardcodes a provider name here.
 export type ProviderKind = string;
-export type ProviderAction =
-  | "create_repository"
-  | "verify_repository"
-  | "create_project"
-  | "trigger_deployment"
-  | "verify_deployment";
+// Provider actions are an open string namespace validated fail-closed against
+// each adapter's declared actions (validateDraftPlan) — the registry, not this
+// type, is the gate, so new capability domains need no core type changes.
+export type ProviderAction = string;
 
 export interface ProjectRecord {
   id: string;

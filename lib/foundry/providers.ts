@@ -4,6 +4,12 @@ import { ProviderRegistry } from "./registry";
 import { VercelAdapter as VercelHttpClient } from "@/lib/providers/vercel.adapter";
 import { GitHubAdapter as GitHubHttpClient } from "@/lib/providers/github.adapter";
 import { ProviderError as HttpProviderError } from "@/lib/providers/http-client";
+import {
+  CloudflareAdapter as CloudflareHttpClient,
+  ResendAdapter as ResendHttpClient,
+  SignalWireAdapter as SignalWireHttpClient,
+  StripeAdapter as StripeHttpClient,
+} from "@/lib/providers/domains.adapter";
 
 export interface ProviderExecutionInput {
   runId: string;
@@ -23,7 +29,7 @@ export interface ProviderCompensationInput extends ProviderExecutionInput {
   providerReference?: string;
 }
 
-export type ProviderCapability = "repository" | "deployment";
+export type ProviderCapability = "repository" | "deployment" | "dns" | "email" | "payments" | "telephony" | "storage";
 
 export interface ProviderAdapter {
   provider: string;
@@ -363,8 +369,220 @@ export class VercelHttpAdapter implements ProviderAdapter {
   }
 }
 
+/**
+ * Deterministic mock for any domain: labels itself, refuses production, and
+ * fabricates stable references for dev/test plans.
+ */
+class MockDomainAdapter implements ProviderAdapter {
+  constructor(
+    readonly provider: string,
+    readonly capability: ProviderCapability,
+    readonly actions: ProviderAction[],
+    private readonly rollbackable: ProviderAction[] = []
+  ) {}
+
+  async execute(action: ProviderAction, input: ProviderExecutionInput): Promise<ProviderExecutionResult> {
+    assertMockAllowed(this.provider);
+    if (!this.actions.includes(action)) {
+      throw new ProviderError(`Unsupported ${this.provider} action ${action}`, { category: "validation" });
+    }
+    const reference = `${this.provider}_${action}_${input.runId}:${input.stepId}`;
+    return {
+      providerReference: reference,
+      output: { mock: true, provider: this.provider, action, reference },
+      evidenceReference: `${this.provider}:${reference}`,
+    };
+  }
+
+  async compensate(action: ProviderAction) {
+    if (!this.rollbackable.includes(action)) return;
+    // Mock resources are ephemeral; nothing to delete.
+  }
+}
+
+/** Real Cloudflare DNS adapter (create/verify/delete records in a zone). */
+export class CloudflareDnsAdapter implements ProviderAdapter {
+  provider = "cloudflare";
+  capability = "dns" as const;
+  actions: ProviderAction[] = ["create_dns_record", "verify_dns_record"];
+  private client: CloudflareHttpClient;
+
+  constructor(apiToken: string, client?: CloudflareHttpClient) {
+    this.client = client ?? new CloudflareHttpClient(apiToken);
+  }
+
+  async execute(action: ProviderAction, input: ProviderExecutionInput): Promise<ProviderExecutionResult> {
+    try {
+      if (action === "create_dns_record") {
+        const zoneId = String(input.config.zoneId || process.env.CLOUDFLARE_ZONE_ID || "");
+        if (!zoneId) throw new ProviderError("missing Cloudflare zoneId", { category: "validation" });
+        const type = String(input.config.recordType || "CNAME");
+        const name = String(input.config.recordName || "");
+        const content = String(input.config.recordContent || input.providerReferences.vercelDeploymentUrl || "");
+        if (!name || !content) throw new ProviderError("missing DNS recordName/recordContent", { category: "validation" });
+        const created = await this.client.createDnsRecord(zoneId, { type, name, content });
+        // Read-back: the record must exist before success is reported.
+        const verified = await this.client.getDnsRecord(zoneId, created.id);
+        return {
+          providerReference: `${zoneId}/${verified.id}`,
+          output: { recordId: verified.id, type: verified.type, name: verified.name, content: verified.content },
+          evidenceReference: `cloudflare:dns:${zoneId}/${verified.id}`,
+        };
+      }
+      if (action === "verify_dns_record") {
+        const reference = String(input.config.recordReference || input.providerReferences.dnsRecordReference || "");
+        const [zone, recordId] = reference.split("/");
+        if (!zone || !recordId) throw new ProviderError("missing DNS record reference to verify", { category: "validation" });
+        const found = await this.client.getDnsRecord(zone, recordId);
+        return {
+          providerReference: reference,
+          output: { recordId: found.id, name: found.name, content: found.content, verified: true },
+          evidenceReference: `cloudflare:dns:${reference}`,
+        };
+      }
+      throw new ProviderError(`Unsupported Cloudflare action ${action}`, { category: "validation" });
+    } catch (error) {
+      if (error instanceof ProviderError) throw error;
+      normalizeHttpError("cloudflare", error);
+    }
+  }
+
+  async compensate(action: ProviderAction, input: ProviderCompensationInput) {
+    if (action === "create_dns_record" && input.providerReference) {
+      const [zoneId, recordId] = input.providerReference.split("/");
+      if (!zoneId || !recordId) throw new ProviderError(`invalid DNS reference "${input.providerReference}"`, { category: "validation" });
+      try {
+        await this.client.deleteDnsRecord(zoneId, recordId);
+      } catch (error) {
+        normalizeHttpError("cloudflare", error);
+      }
+    }
+  }
+}
+
+/** Real Resend email adapter. Email cannot be unsent: no compensation, declared truthfully. */
+export class ResendEmailAdapter implements ProviderAdapter {
+  provider = "resend";
+  capability = "email" as const;
+  actions: ProviderAction[] = ["send_email"];
+  private client: ResendHttpClient;
+
+  constructor(apiKey: string, client?: ResendHttpClient) {
+    this.client = client ?? new ResendHttpClient(apiKey);
+  }
+
+  async execute(action: ProviderAction, input: ProviderExecutionInput): Promise<ProviderExecutionResult> {
+    try {
+      if (action !== "send_email") throw new ProviderError(`Unsupported Resend action ${action}`, { category: "validation" });
+      const from = String(input.config.emailFrom || "");
+      const to = String(input.config.emailTo || "");
+      const subject = String(input.config.emailSubject || "");
+      const text = String(input.config.emailBody || "");
+      if (!from || !to || !subject) throw new ProviderError("missing emailFrom/emailTo/emailSubject", { category: "validation" });
+      const sent = await this.client.sendEmail({ from, to, subject, text });
+      return {
+        providerReference: sent.id,
+        output: { emailId: sent.id, to },
+        evidenceReference: `resend:email:${sent.id}`,
+      };
+    } catch (error) {
+      if (error instanceof ProviderError) throw error;
+      normalizeHttpError("resend", error);
+    }
+  }
+}
+
+/** Real Stripe payments adapter (product provisioning at launch). */
+export class StripePaymentsAdapter implements ProviderAdapter {
+  provider = "stripe";
+  capability = "payments" as const;
+  actions: ProviderAction[] = ["create_product", "verify_product"];
+  private client: StripeHttpClient;
+
+  constructor(secretKey: string, client?: StripeHttpClient) {
+    this.client = client ?? new StripeHttpClient(secretKey);
+  }
+
+  async execute(action: ProviderAction, input: ProviderExecutionInput): Promise<ProviderExecutionResult> {
+    try {
+      if (action === "create_product") {
+        const name = String(input.config.productName || "");
+        if (!name) throw new ProviderError("missing productName", { category: "validation" });
+        const created = await this.client.createProduct({ name });
+        const verified = await this.client.getProduct(created.id);
+        return {
+          providerReference: verified.id,
+          output: { productId: verified.id, productName: verified.name, active: verified.active },
+          evidenceReference: `stripe:product:${verified.id}`,
+        };
+      }
+      if (action === "verify_product") {
+        const productId = String(input.config.productId || input.providerReferences.stripeProductId || "");
+        if (!productId) throw new ProviderError("missing productId to verify", { category: "validation" });
+        const found = await this.client.getProduct(productId);
+        return {
+          providerReference: found.id,
+          output: { productId: found.id, active: found.active, verified: true },
+          evidenceReference: `stripe:product:${found.id}`,
+        };
+      }
+      throw new ProviderError(`Unsupported Stripe action ${action}`, { category: "validation" });
+    } catch (error) {
+      if (error instanceof ProviderError) throw error;
+      normalizeHttpError("stripe", error);
+    }
+  }
+
+  async compensate(action: ProviderAction, input: ProviderCompensationInput) {
+    // Stripe products are archived, not destroyed — truthful partial rollback.
+    if (action === "create_product" && input.providerReference) {
+      try {
+        await this.client.archiveProduct(input.providerReference);
+      } catch (error) {
+        normalizeHttpError("stripe", error);
+      }
+    }
+  }
+}
+
+/** Real SignalWire telephony adapter. Sent SMS cannot be recalled: no compensation. */
+export class SignalWireTelephonyAdapter implements ProviderAdapter {
+  provider = "signalwire";
+  capability = "telephony" as const;
+  actions: ProviderAction[] = ["send_sms"];
+  private client: SignalWireHttpClient;
+
+  constructor(spaceUrl: string, projectId: string, apiToken: string, client?: SignalWireHttpClient) {
+    this.client = client ?? new SignalWireHttpClient(spaceUrl, projectId, apiToken);
+  }
+
+  async execute(action: ProviderAction, input: ProviderExecutionInput): Promise<ProviderExecutionResult> {
+    try {
+      if (action !== "send_sms") throw new ProviderError(`Unsupported SignalWire action ${action}`, { category: "validation" });
+      const from = String(input.config.smsFrom || "");
+      const to = String(input.config.smsTo || "");
+      const body = String(input.config.smsBody || "");
+      if (!from || !to || !body) throw new ProviderError("missing smsFrom/smsTo/smsBody", { category: "validation" });
+      const sent = await this.client.sendSms({ from, to, body });
+      return {
+        providerReference: sent.sid,
+        output: { messageSid: sent.sid, status: sent.status, to },
+        evidenceReference: `signalwire:sms:${sent.sid}`,
+      };
+    } catch (error) {
+      if (error instanceof ProviderError) throw error;
+      normalizeHttpError("signalwire", error);
+    }
+  }
+}
+
 const repositoryRegistry = new ProviderRegistry<ProviderAdapter>("repository");
 const deploymentRegistry = new ProviderRegistry<ProviderAdapter>("deployment");
+const dnsRegistry = new ProviderRegistry<ProviderAdapter>("dns");
+const emailRegistry = new ProviderRegistry<ProviderAdapter>("email");
+const paymentsRegistry = new ProviderRegistry<ProviderAdapter>("payments");
+const telephonyRegistry = new ProviderRegistry<ProviderAdapter>("telephony");
+const storageRegistry = new ProviderRegistry<ProviderAdapter>("storage");
 
 repositoryRegistry.register(
   process.env.GITHUB_TOKEN ? new GitHubHttpAdapter(process.env.GITHUB_TOKEN) : new MockGitHubAdapter()
@@ -375,9 +593,42 @@ deploymentRegistry.register(
   process.env.VERCEL_API_TOKEN ? new VercelHttpAdapter(process.env.VERCEL_API_TOKEN) : new MockVercelAdapter()
 );
 
+dnsRegistry.register(
+  process.env.CLOUDFLARE_API_TOKEN
+    ? new CloudflareDnsAdapter(process.env.CLOUDFLARE_API_TOKEN)
+    : new MockDomainAdapter("cloudflare", "dns", ["create_dns_record", "verify_dns_record"], ["create_dns_record"])
+);
+emailRegistry.register(
+  process.env.RESEND_API_KEY
+    ? new ResendEmailAdapter(process.env.RESEND_API_KEY)
+    : new MockDomainAdapter("resend", "email", ["send_email"])
+);
+paymentsRegistry.register(
+  process.env.STRIPE_SECRET_KEY
+    ? new StripePaymentsAdapter(process.env.STRIPE_SECRET_KEY)
+    : new MockDomainAdapter("stripe", "payments", ["create_product", "verify_product"], ["create_product"])
+);
+telephonyRegistry.register(
+  process.env.SIGNALWIRE_SPACE_URL && process.env.SIGNALWIRE_PROJECT_ID && process.env.SIGNALWIRE_API_TOKEN
+    ? new SignalWireTelephonyAdapter(
+        process.env.SIGNALWIRE_SPACE_URL,
+        process.env.SIGNALWIRE_PROJECT_ID,
+        process.env.SIGNALWIRE_API_TOKEN
+      )
+    : new MockDomainAdapter("signalwire", "telephony", ["send_sms"])
+);
+// Storage: local/test adapter only. A production object store is deferred
+// until VERIDIAN artifact requirements land (documented launch-profile gap).
+storageRegistry.register(new MockDomainAdapter("local-storage", "storage", ["store_artifact", "verify_artifact"], ["store_artifact"]));
+
 const registries: Record<ProviderCapability, ProviderRegistry<ProviderAdapter>> = {
   repository: repositoryRegistry,
   deployment: deploymentRegistry,
+  dns: dnsRegistry,
+  email: emailRegistry,
+  payments: paymentsRegistry,
+  telephony: telephonyRegistry,
+  storage: storageRegistry,
 };
 
 /** Resolves an adapter by providerId alone (provider ids are unique across capabilities). */
@@ -396,4 +647,16 @@ export function listRegisteredProviders(capability?: ProviderCapability): string
 
 export function registerProviderAdapter(adapter: ProviderAdapter): void {
   registries[adapter.capability].register(adapter);
+}
+
+/** Capability metadata: which providers exist per capability and which actions each declares. */
+export function listProviderMetadata() {
+  const metadata: Record<string, Array<{ provider: string; actions: ProviderAction[]; mock: boolean }>> = {};
+  for (const [capability, registry] of Object.entries(registries)) {
+    metadata[capability] = registry.list().map((id) => {
+      const adapter = registry.get(id);
+      return { provider: adapter.provider, actions: adapter.actions, mock: adapter instanceof MockDomainAdapter || adapter.constructor.name.startsWith("Mock") };
+    });
+  }
+  return metadata;
 }

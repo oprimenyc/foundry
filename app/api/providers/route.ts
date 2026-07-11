@@ -1,6 +1,6 @@
 import { requireApiAuth } from "@/lib/foundry/auth";
 import { NextResponse } from "next/server";
-import { listRegisteredProviders } from "@/lib/foundry/providers";
+import { listProviderMetadata, listRegisteredProviders } from "@/lib/foundry/providers";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,10 @@ export async function GET(req: Request) {
   const denied = requireApiAuth(req);
   if (denied) return denied;
   return NextResponse.json({
+    // Back-compat id lists plus full capability metadata (providers, declared
+    // actions, mock flag) so plans/UI never assume unsupported operations.
     repository: listRegisteredProviders("repository"),
     deployment: listRegisteredProviders("deployment"),
+    capabilities: listProviderMetadata(),
   });
 }

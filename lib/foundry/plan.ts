@@ -6,15 +6,13 @@ import { UnknownProviderError } from "./registry";
 const PlanStepSchema = z.object({
   id: z.string().min(1),
   provider: z.string().min(1),
-  action: z.enum(["create_repository", "verify_repository", "create_project", "trigger_deployment", "verify_deployment"]),
+  action: z.string().min(1).max(64),
   name: z.string().min(1),
   dependsOn: z.array(z.string()).default([]),
   config: z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])).default({}),
   timeoutMs: z.number().int().positive().max(120000).default(15000),
   retryLimit: z.number().int().min(0).max(3).default(1),
-  rollbackAction: z
-    .enum(["create_repository", "verify_repository", "create_project", "trigger_deployment", "verify_deployment"])
-    .optional(),
+  rollbackAction: z.string().min(1).max(64).optional(),
   approvalRequired: z.boolean().optional(),
 });
 

@@ -5,3 +5,10 @@ out/
 .env.local
 *.tsbuildinfo
 next-env.d.ts
+
+# Foundry local runtime artifacts
+.foundry-data/
+.foundry-test-data/
+*.err.log
+*.out.log
+.smoke-server.log

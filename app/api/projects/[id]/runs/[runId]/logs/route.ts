@@ -8,6 +8,8 @@ export async function GET(req: Request, { params }: { params: { id: string; runI
 
   const stream = new ReadableStream({
     async start(controller) {
+      // Flush headers immediately so clients see the stream open before any events exist.
+      controller.enqueue(encoder.encode(": connected\n\n"));
       const initial = await listRunEvents(params.runId, cursor);
       for (const event of initial) {
         cursor = event.sequence;

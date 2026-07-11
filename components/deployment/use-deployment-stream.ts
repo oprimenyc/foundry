@@ -1,26 +1,29 @@
 "use client";
 import { useEffect, useState } from "react";
-import type { LogEvent } from "@/lib/logs/bus";
+import type { ExecutionEventRecord } from "@/lib/foundry/types";
 
-export function useDeploymentStream(projectId: string | null) {
-  const [logs, setLogs] = useState<LogEvent[]>([]);
+export function useDeploymentStream(projectId: string | null, runId: string | null) {
+  const [logs, setLogs] = useState<ExecutionEventRecord[]>([]);
 
   useEffect(() => {
-    if (!projectId) return;
-    const eventSource = new EventSource(`/api/projects/${projectId}/logs`);
+    if (!projectId || !runId) return;
+    setLogs([]);
+    const eventSource = new EventSource(`/api/projects/${projectId}/runs/${runId}/logs`);
 
     eventSource.onmessage = (e) => {
       try {
-        const event = JSON.parse(e.data) as LogEvent;
+        const event = JSON.parse(e.data) as ExecutionEventRecord;
         setLogs((prev) => [...prev, event]);
-        if (event.type === "done") eventSource.close();
+        if (["completed", "failed", "cancelled", "rolled_back"].includes(event.status)) {
+          eventSource.close();
+        }
       } catch {
-        setLogs((prev) => [...prev, { type: "log", message: e.data, at: new Date().toISOString() }]);
+        // ignore malformed stream messages
       }
     };
 
     return () => eventSource.close();
-  }, [projectId]);
+  }, [projectId, runId]);
 
   return { logs };
 }

@@ -13,13 +13,18 @@ import { ProviderRegistry, UnknownProviderError, DuplicateProviderError } from "
 
 const testDir = path.join(process.cwd(), ".foundry-test-data");
 
-async function resetEnv(name: string) {
+async function resetEnv(name: string, mode: "file" | "sqlite" = "file") {
   process.env.FOUNDRY_MASTER_KEY = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+  process.env.FOUNDRY_PERSISTENCE = mode;
   process.env.FOUNDRY_STORE_FILE = path.join(testDir, `${name}.json`);
+  process.env.FOUNDRY_SQLITE_FILE = path.join(testDir, `${name}.sqlite`);
   Object.assign(process.env, { NODE_ENV: "test" });
   resetFoundryPersistence();
   await mkdir(testDir, { recursive: true });
   await rm(process.env.FOUNDRY_STORE_FILE, { force: true });
+  await rm(process.env.FOUNDRY_SQLITE_FILE, { force: true });
+  await rm(`${process.env.FOUNDRY_SQLITE_FILE}-wal`, { force: true });
+  await rm(`${process.env.FOUNDRY_SQLITE_FILE}-shm`, { force: true });
 }
 
 async function waitForTerminal(runId: string, timeoutMs = 5000) {
@@ -277,4 +282,62 @@ test("missing production master key fails closed for secret initialization", asy
   assert.rejects(async () => getSecretsService(), /FOUNDRY_MASTER_KEY/);
   const health = await persistenceHealth();
   assert.equal(health.productionSafe, false);
+  Object.assign(process.env, { NODE_ENV: "test" });
+});
+
+test("sqlite persistence: full mocked deployment completes and survives process-level reset", async () => {
+  await resetEnv("sqlite-e2e", "sqlite");
+  const project = await createProject({ name: "Sqlite E2E", prompt: "Launch sqlite e2e app on Vercel" });
+  await seedMockCredentials(project.id);
+  const { plan } = await createPlanForProject({ projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
+  const run = await createRunForProject({ projectId: project.id, planId: plan.id, idempotencyKey: "sqlite-key" });
+  const terminal = await waitForTerminal(run.id);
+  assert.equal(terminal.status, "completed");
+
+  // Simulate process restart: new persistence instance must read the same durable state.
+  resetFoundryPersistence();
+  const snapshot = await getStoreSnapshot();
+  assert.equal(snapshot.runs.length, 1);
+  assert.equal(snapshot.runs[0].status, "completed");
+  assert.equal(snapshot.events.filter((event) => event.runId === run.id).length > 0, true);
+});
+
+test("sqlite persistence is production-safe; file persistence is not", async () => {
+  await resetEnv("sqlite-health", "sqlite");
+  Object.assign(process.env, { NODE_ENV: "production" });
+  const sqliteHealth = await persistenceHealth();
+  assert.equal(sqliteHealth.mode, "sqlite");
+  assert.equal(sqliteHealth.reachable, true);
+  assert.equal(sqliteHealth.productionSafe, true);
+
+  process.env.FOUNDRY_PERSISTENCE = "file";
+  resetFoundryPersistence();
+  const fileHealth = await persistenceHealth();
+  assert.equal(fileHealth.mode, "file");
+  assert.equal(fileHealth.productionSafe, false);
+  Object.assign(process.env, { NODE_ENV: "test" });
+});
+
+test("unknown FOUNDRY_PERSISTENCE mode fails closed", async () => {
+  await resetEnv("bad-mode");
+  process.env.FOUNDRY_PERSISTENCE = "cosmosdb";
+  resetFoundryPersistence();
+  const health = await persistenceHealth();
+  assert.equal(health.reachable, false);
+  assert.equal(health.productionSafe, false);
+  assert.match(String(health.probeError), /Unknown FOUNDRY_PERSISTENCE/);
+  await assert.rejects(async () => getStoreSnapshot(), /Unknown FOUNDRY_PERSISTENCE/);
+});
+
+test("production run creation fails closed on non-production-safe persistence", async () => {
+  await resetEnv("prod-gate", "file");
+  const project = await createProject({ name: "Prod Gate", prompt: "Launch prod gate app on Vercel" });
+  await seedMockCredentials(project.id);
+  const { plan } = await createPlanForProject({ projectId: project.id, prompt: project.prompt, draftPlan: validDraftPlan() });
+  Object.assign(process.env, { NODE_ENV: "production" });
+  await assert.rejects(
+    async () => createRunForProject({ projectId: project.id, planId: plan.id }),
+    /durable configured persistence/
+  );
+  Object.assign(process.env, { NODE_ENV: "test" });
 });

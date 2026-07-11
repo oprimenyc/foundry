@@ -193,9 +193,31 @@ export async function seedMockCredentials(projectId: string) {
 }
 
 export async function persistenceHealth() {
+  let persistence: ReturnType<typeof getFoundryPersistence>;
+  try {
+    persistence = getFoundryPersistence();
+  } catch (error) {
+    // Misconfiguration (e.g. unknown FOUNDRY_PERSISTENCE) reports as unhealthy instead of crashing health checks.
+    return {
+      mode: "unavailable" as const,
+      reachable: false,
+      probeError: error instanceof Error ? error.message : String(error),
+      productionSafe: false,
+    };
+  }
+  let reachable = true;
+  let probeError: string | undefined;
+  try {
+    await persistence.probe();
+  } catch (error) {
+    reachable = false;
+    probeError = error instanceof Error ? error.message : String(error);
+  }
   return {
-    mode: getFoundryPersistence().mode(),
-    productionSafe: process.env.NODE_ENV !== "production" || getFoundryPersistence().mode() === "supabase",
+    mode: persistence.mode(),
+    reachable,
+    ...(probeError ? { probeError } : {}),
+    productionSafe: reachable && (process.env.NODE_ENV !== "production" || persistence.productionSafe()),
   };
 }
 

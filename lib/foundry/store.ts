@@ -1,4 +1,5 @@
-import { mkdir, readFile, writeFile } from "fs/promises";
+import { mkdir, readFile, rename, writeFile } from "fs/promises";
+import { mkdirSync } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import {
@@ -26,10 +27,16 @@ const DEFAULT_STORE: FoundryStore = {
 
 type CollectionKey = keyof FoundryStore;
 
+export type PersistenceMode = "file" | "sqlite";
+
 export interface FoundryPersistence {
-  mode(): "file" | "supabase";
+  mode(): PersistenceMode;
+  /** True when the backing store gives atomic, durable, crash-safe writes on a single node. */
+  productionSafe(): boolean;
   read(): Promise<FoundryStore>;
   write(mutator: (draft: FoundryStore) => void): Promise<FoundryStore>;
+  /** Real read/write probe against the backing store; throws on failure. */
+  probe(): Promise<void>;
 }
 
 class FilePersistence implements FoundryPersistence {
@@ -39,6 +46,15 @@ class FilePersistence implements FoundryPersistence {
 
   mode() {
     return "file" as const;
+  }
+
+  productionSafe() {
+    // JSON.stringify + non-atomic writeFile: a crash mid-write corrupts the store.
+    return false;
+  }
+
+  async probe() {
+    await this.write(() => {});
   }
 
   async read(): Promise<FoundryStore> {
@@ -56,7 +72,10 @@ class FilePersistence implements FoundryPersistence {
     this.queue = this.queue.then(async () => {
       const current = await this.readRaw();
       mutator(current);
-      await writeFile(this.filePath, JSON.stringify(current, null, 2), "utf8");
+      // Write-to-temp + rename so a crash mid-write never truncates the live store.
+      const tmpPath = `${this.filePath}.tmp`;
+      await writeFile(tmpPath, JSON.stringify(current, null, 2), "utf8");
+      await rename(tmpPath, this.filePath);
     });
     await this.queue;
     return this.read();
@@ -73,14 +92,103 @@ class FilePersistence implements FoundryPersistence {
   }
 }
 
+class SqlitePersistence implements FoundryPersistence {
+  private queue = Promise.resolve();
+  // Type from node:sqlite (experimental builtin); loaded lazily so file mode never touches it.
+  private db: import("node:sqlite").DatabaseSync;
+
+  constructor(private readonly dbPath: string) {
+    mkdirSync(path.dirname(dbPath), { recursive: true });
+    // process.getBuiltinModule works in both CJS and ESM and keeps bundlers from
+    // trying to resolve the experimental builtin statically.
+    const sqlite = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite") | undefined;
+    if (!sqlite) throw new Error("node:sqlite is unavailable in this Node runtime; sqlite persistence requires Node >= 22.5");
+    const { DatabaseSync } = sqlite;
+    this.db = new DatabaseSync(dbPath);
+    this.db.exec("PRAGMA journal_mode = WAL;");
+    this.db.exec("PRAGMA synchronous = FULL;");
+    this.db.exec("CREATE TABLE IF NOT EXISTS foundry_store (id INTEGER PRIMARY KEY CHECK (id = 1), data TEXT NOT NULL)");
+    const row = this.db.prepare("SELECT id FROM foundry_store WHERE id = 1").get();
+    if (!row) {
+      this.db.prepare("INSERT INTO foundry_store (id, data) VALUES (1, ?)").run(JSON.stringify(DEFAULT_STORE));
+    }
+  }
+
+  mode() {
+    return "sqlite" as const;
+  }
+
+  productionSafe() {
+    // WAL journal + FULL sync + transactional single-row update: atomic and crash-safe on a single node.
+    return true;
+  }
+
+  async read(): Promise<FoundryStore> {
+    await this.queue;
+    return this.readRaw();
+  }
+
+  private readRaw(): FoundryStore {
+    const row = this.db.prepare("SELECT data FROM foundry_store WHERE id = 1").get() as { data: string } | undefined;
+    if (!row) throw new Error("SQLite store row missing — store not initialized");
+    return JSON.parse(row.data) as FoundryStore;
+  }
+
+  async write(mutator: (draft: FoundryStore) => void): Promise<FoundryStore> {
+    let result: FoundryStore | undefined;
+    this.queue = this.queue.then(async () => {
+      this.db.exec("BEGIN IMMEDIATE");
+      try {
+        const current = this.readRaw();
+        mutator(current);
+        this.db.prepare("UPDATE foundry_store SET data = ? WHERE id = 1").run(JSON.stringify(current));
+        this.db.exec("COMMIT");
+        result = current;
+      } catch (error) {
+        this.db.exec("ROLLBACK");
+        throw error;
+      }
+    });
+    await this.queue;
+    if (!result) throw new Error("SQLite write produced no result");
+    return result;
+  }
+
+  async probe() {
+    await this.write(() => {});
+  }
+}
+
 const globalForStore = globalThis as unknown as {
   __foundryStore?: FoundryPersistence;
 };
 
+const VALID_MODES: PersistenceMode[] = ["file", "sqlite"];
+
+function resolvePersistenceMode(): PersistenceMode {
+  const configured = process.env.FOUNDRY_PERSISTENCE;
+  if (configured) {
+    if (!VALID_MODES.includes(configured as PersistenceMode)) {
+      throw new Error(
+        `Unknown FOUNDRY_PERSISTENCE mode "${configured}". Valid modes: ${VALID_MODES.join(", ")}`
+      );
+    }
+    return configured as PersistenceMode;
+  }
+  // Default: durable sqlite in production, file for dev/test convenience.
+  return process.env.NODE_ENV === "production" ? "sqlite" : "file";
+}
+
 export function getFoundryPersistence(): FoundryPersistence {
   if (!globalForStore.__foundryStore) {
-    const filePath = process.env.FOUNDRY_STORE_FILE || path.join(process.cwd(), ".foundry-data", "store.json");
-    globalForStore.__foundryStore = new FilePersistence(filePath);
+    const mode = resolvePersistenceMode();
+    if (mode === "sqlite") {
+      const dbPath = process.env.FOUNDRY_SQLITE_FILE || path.join(process.cwd(), ".foundry-data", "store.sqlite");
+      globalForStore.__foundryStore = new SqlitePersistence(dbPath);
+    } else {
+      const filePath = process.env.FOUNDRY_STORE_FILE || path.join(process.cwd(), ".foundry-data", "store.json");
+      globalForStore.__foundryStore = new FilePersistence(filePath);
+    }
   }
   return globalForStore.__foundryStore;
 }

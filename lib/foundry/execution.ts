@@ -246,6 +246,7 @@ export async function executeRun(runId: string) {
         }
         if (planStep.provider === "vercel" && planStep.action === "trigger_deployment") {
           ctx.providerReferences.vercelDeploymentUrl = String(result.output.deploymentUrl || "");
+          ctx.providerReferences.vercelDeploymentId = String(result.output.deploymentId || "");
         }
 
         let rollbackActionId: string | undefined;

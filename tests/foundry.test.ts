@@ -10,7 +10,8 @@ import { POST as createProjectRoute } from "@/app/api/projects/route";
 import { POST as sessionLoginRoute } from "@/app/api/auth/session/route";
 import { POST as cancelRoute } from "@/app/api/projects/[id]/runs/[runId]/cancel/route";
 import { GET as healthzRoute } from "@/app/api/healthz/route";
-import { getProviderAdapter, listRegisteredProviders, registerProviderAdapter, ProviderError, type ProviderAdapter } from "@/lib/foundry/providers";
+import { getProviderAdapter, listRegisteredProviders, registerProviderAdapter, ProviderError, VercelHttpAdapter, type ProviderAdapter } from "@/lib/foundry/providers";
+import { VercelAdapter as VercelClient } from "@/lib/providers/vercel.adapter";
 import { ProviderRegistry, UnknownProviderError, DuplicateProviderError } from "@/lib/foundry/registry";
 
 const testDir = path.join(process.cwd(), ".foundry-test-data");
@@ -277,6 +278,76 @@ test("existing mocked github/vercel providers still resolve through the registry
 function randomUUIDForTest() {
   return Math.random().toString(36).slice(2);
 }
+
+function stubHttp(handler: (url: string, options: RequestInit) => unknown) {
+  const calls: Array<{ url: string; options: RequestInit }> = [];
+  return {
+    calls,
+    client: {
+      async request(url: string, options: RequestInit = {}) {
+        calls.push({ url, options });
+        return handler(url, options);
+      },
+    } as unknown as import("@/lib/providers/http-client").ProviderHTTPClient,
+  };
+}
+
+test("live Vercel adapter triggers a git deployment and normalizes the result", async () => {
+  const { calls, client } = stubHttp((url) => {
+    if (url.endsWith("/v13/deployments")) {
+      return { id: "dpl_123", url: "myapp-abc.vercel.app", readyState: "QUEUED" };
+    }
+    throw new Error(`unexpected url ${url}`);
+  });
+  const adapter = new VercelHttpAdapter("fake-token", new VercelClient("fake-token", client));
+  const result = await adapter.execute("trigger_deployment", {
+    runId: "run1",
+    stepId: "step1",
+    projectId: "proj1",
+    config: { projectName: "myapp" },
+    providerReferences: { githubRepoUrl: "https://github.com/acme/myapp" },
+  });
+  assert.equal(result.providerReference, "dpl_123");
+  assert.equal(result.output.deploymentUrl, "https://myapp-abc.vercel.app");
+  assert.equal(result.output.deploymentId, "dpl_123");
+  const body = JSON.parse(String(calls[0].options.body));
+  assert.deepEqual(body.gitSource, { type: "github", org: "acme", repo: "myapp", ref: "main" });
+});
+
+test("live Vercel adapter verifies a deployment via polling and fails on ERROR state", async () => {
+  let polls = 0;
+  const { client } = stubHttp((url) => {
+    if (url.includes("/v13/deployments/dpl_ok")) {
+      polls += 1;
+      return { id: "dpl_ok", url: "ok.vercel.app", readyState: polls < 2 ? "BUILDING" : "READY" };
+    }
+    if (url.includes("/v13/deployments/dpl_bad")) {
+      return { id: "dpl_bad", url: "bad.vercel.app", readyState: "ERROR" };
+    }
+    throw new Error(`unexpected url ${url}`);
+  });
+  const vercel = new VercelClient("fake-token", client);
+  const ready = await vercel.waitForDeployment("dpl_ok", 10);
+  assert.equal(ready.readyState, "READY");
+  assert.equal(polls, 2);
+  await assert.rejects(async () => vercel.waitForDeployment("dpl_bad", 10), /ended in state ERROR/);
+});
+
+test("live Vercel adapter compensates trigger_deployment by cancelling the deployment", async () => {
+  const { calls, client } = stubHttp(() => ({ id: "dpl_123", url: "x.vercel.app", readyState: "CANCELED" }));
+  const adapter = new VercelHttpAdapter("fake-token", new VercelClient("fake-token", client));
+  await adapter.compensate("trigger_deployment", {
+    runId: "run1",
+    stepId: "step1",
+    projectId: "proj1",
+    config: {},
+    providerReferences: {},
+    providerReference: "dpl_123",
+  });
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].url, /\/v12\/deployments\/dpl_123\/cancel$/);
+  assert.equal(calls[0].options.method, "PATCH");
+});
 
 test("cancellation during an active run stops execution before the next step", async () => {
   await resetEnv("cancel-active");

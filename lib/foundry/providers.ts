@@ -194,14 +194,14 @@ class MockVercelAdapter implements ProviderAdapter {
  * ProviderAdapter contract as the mock. Only selected when a real token is
  * configured, so existing mock-backed tests/mock-e2e are unaffected.
  */
-class VercelHttpAdapter implements ProviderAdapter {
+export class VercelHttpAdapter implements ProviderAdapter {
   provider = "vercel";
   capability = "deployment" as const;
   actions: ProviderAction[] = ["create_project", "trigger_deployment", "verify_deployment"];
   private client: VercelHttpClient;
 
-  constructor(apiToken: string) {
-    this.client = new VercelHttpClient(apiToken);
+  constructor(apiToken: string, client?: VercelHttpClient) {
+    this.client = client ?? new VercelHttpClient(apiToken);
   }
 
   async execute(action: ProviderAction, input: ProviderExecutionInput): Promise<ProviderExecutionResult> {
@@ -216,14 +216,49 @@ class VercelHttpAdapter implements ProviderAdapter {
         evidenceReference: `vercel:${created.name}`,
       };
     }
-    // Triggering/verifying a real deployment requires additional Vercel deployment-API
-    // calls not yet implemented; fail closed rather than fabricate a result.
-    throw new Error(`Vercel action "${action}" is not implemented against the live API yet`);
+    if (action === "trigger_deployment") {
+      const projectName = String(input.config.projectName || input.providerReferences.vercelProjectName || "foundry-app");
+      const repoUrl = String(input.providerReferences.githubRepoUrl || "");
+      if (!repoUrl) throw new ProviderError("missing GitHub repository URL for deployment", { category: "validation" });
+      const deployment = await this.client.createDeployment({
+        projectName,
+        repoUrl,
+        ref: input.config.gitRef ? String(input.config.gitRef) : undefined,
+      });
+      return {
+        providerReference: deployment.id,
+        output: {
+          deploymentId: deployment.id,
+          deploymentUrl: deployment.url.startsWith("http") ? deployment.url : `https://${deployment.url}`,
+          readyState: deployment.readyState,
+        },
+        evidenceReference: `vercel:deployment:${deployment.id}`,
+      };
+    }
+    if (action === "verify_deployment") {
+      const deploymentId = String(input.config.deploymentId || input.providerReferences.vercelDeploymentId || "");
+      if (!deploymentId) throw new ProviderError("missing deployment id to verify", { category: "validation" });
+      // Step timeout (execution policy) bounds this poll loop.
+      const deployment = await this.client.waitForDeployment(deploymentId);
+      return {
+        providerReference: deployment.id,
+        output: {
+          deploymentId: deployment.id,
+          deploymentUrl: deployment.url.startsWith("http") ? deployment.url : `https://${deployment.url}`,
+          readyState: deployment.readyState,
+        },
+        evidenceReference: `vercel:deployment:${deployment.id}:READY`,
+      };
+    }
+    throw new ProviderError(`Unsupported Vercel action ${action}`, { category: "validation" });
   }
 
   async compensate(action: ProviderAction, input: ProviderCompensationInput) {
     if (action === "create_project" && input.providerReference) {
       await this.client.deleteProject(input.providerReference);
+    }
+    if (action === "trigger_deployment" && input.providerReference) {
+      await this.client.cancelDeployment(input.providerReference);
     }
   }
 }

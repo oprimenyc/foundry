@@ -6,6 +6,9 @@ import { startRunExecution } from "./execution";
 import type { DeploymentPlanRecord, DeploymentRunRecord, ProjectRecord } from "./types";
 import { upsertProviderCredential } from "./credentials";
 import { listRegisteredProviders } from "./providers";
+import { selectProvider } from "./universal/selection";
+import { universalRegistry } from "./universal/registry";
+import { NoEligibleProviderError } from "./universal/types";
 
 /** Thrown when a resource does not exist in the caller's org scope. Routes map it to 404 (no cross-org enumeration). */
 export class ScopeError extends Error {
@@ -43,7 +46,7 @@ export async function createPlanForProject(input: {
     status: validation.ok ? "validated" : "rejected",
     config: validation.ok
       ? validation.plan.config
-      : { name: project.name, hosting: "vercel", repository: `${project.slug}-repo` },
+      : { name: project.name, hosting: safeSelect("hosting", "create_project"), repository: `${project.slug}-repo` },
     budget: validation.ok ? validation.plan.budget : { maxSteps: 0, maxRuntimeMs: 0 },
     steps: validation.ok ? validation.plan.steps : [],
     validationErrors: validation.ok ? [] : validation.errors,
@@ -52,12 +55,27 @@ export async function createPlanForProject(input: {
   return { project, plan };
 }
 
+/** Selection that reads as a value, not a crash, when nothing is eligible. */
+function safeSelect(category: string, action: string): string {
+  try {
+    return selectProvider({ category, action }).providerId;
+  } catch (error) {
+    if (error instanceof NoEligibleProviderError) return "unresolved";
+    throw error;
+  }
+}
+
+/**
+ * Provider-agnostic launch pipeline: the planner (and this scaffold) declare
+ * capability categories only; the selection engine resolves vendors during
+ * validation (`provider: "auto"`).
+ */
 async function generatePlanDraft(prompt: string, project: ProjectRecord) {
   const generated = await generateDeploymentPlan(prompt);
   return DraftPlanSchema.parse({
     config: {
       name: generated.config.name,
-      hosting: generated.config.hosting,
+      hosting: safeSelect("hosting", "create_project"),
       repository: `${project.slug}-repo`,
     },
     budget: {
@@ -66,10 +84,11 @@ async function generatePlanDraft(prompt: string, project: ProjectRecord) {
     },
     steps: [
       {
-        id: "github-create",
-        provider: "github",
+        id: "repository-create",
+        provider: "auto",
+        category: "repository",
         action: "create_repository",
-        name: "Create GitHub repository",
+        name: "Create repository",
         dependsOn: [],
         config: {
           repositoryName: `${project.slug}-repo`,
@@ -79,45 +98,49 @@ async function generatePlanDraft(prompt: string, project: ProjectRecord) {
         rollbackAction: "create_repository",
       },
       {
-        id: "github-verify",
-        provider: "github",
+        id: "repository-verify",
+        provider: "auto",
+        category: "repository",
         action: "verify_repository",
-        name: "Verify GitHub repository",
-        dependsOn: ["github-create"],
+        name: "Verify repository",
+        dependsOn: ["repository-create"],
         config: {},
         timeoutMs: 5000,
         retryLimit: 0,
       },
       {
-        id: "vercel-create",
-        provider: "vercel",
+        id: "hosting-create",
+        provider: "auto",
+        category: "hosting",
         action: "create_project",
-        name: "Create Vercel project",
-        dependsOn: ["github-verify"],
+        name: "Create hosting project",
+        dependsOn: ["repository-verify"],
         config: {
           projectName: project.slug,
-          credentialRef: "secret:vercel-token",
+          credentialRef: "secret:hosting/execution",
         },
         timeoutMs: 15000,
         retryLimit: 1,
         rollbackAction: "create_project",
       },
       {
-        id: "vercel-deploy",
-        provider: "vercel",
+        id: "hosting-deploy",
+        provider: "auto",
+        category: "hosting",
         action: "trigger_deployment",
-        name: "Trigger Vercel deployment",
-        dependsOn: ["vercel-create"],
+        name: "Trigger deployment",
+        dependsOn: ["hosting-create"],
         config: {},
         timeoutMs: 15000,
         retryLimit: 1,
       },
       {
-        id: "vercel-verify",
-        provider: "vercel",
+        id: "hosting-verify",
+        provider: "auto",
+        category: "hosting",
         action: "verify_deployment",
         name: "Verify deployment",
-        dependsOn: ["vercel-deploy"],
+        dependsOn: ["hosting-deploy"],
         config: {},
         timeoutMs: 5000,
         retryLimit: 0,
@@ -191,24 +214,32 @@ export async function getRunView(projectId: string, runId: string, orgId?: strin
   };
 }
 
+/**
+ * Seeds credentials for the providers the selection engine would choose for
+ * the default launch pipeline — provider-agnostic: no vendor names here.
+ * Secrets come from the provider's declared credential env vars, or a mock
+ * placeholder in non-production.
+ */
 export async function seedMockCredentials(projectId: string, orgId?: string) {
   const project = await requireProject(projectId, orgId);
-  const githubToken = process.env.GITHUB_TOKEN || "mock-github-token";
-  const vercelToken = process.env.VERCEL_API_TOKEN || "mock-vercel-token";
-  await upsertProviderCredential({
-    orgId: project.orgId,
-    projectId: project.id,
-    provider: "github",
-    purpose: "deployment",
-    plaintextSecret: githubToken,
-  });
-  await upsertProviderCredential({
-    orgId: project.orgId,
-    projectId: project.id,
-    provider: "vercel",
-    purpose: "deployment",
-    plaintextSecret: vercelToken,
-  });
+  const needs: Array<{ category: string; action: string }> = [
+    { category: "repository", action: "create_repository" },
+    { category: "hosting", action: "create_project" },
+  ];
+  for (const need of needs) {
+    const decision = selectProvider({ category: need.category, action: need.action });
+    const manifest = universalRegistry.get(decision.providerId).manifest;
+    const secret =
+      manifest.requiredCredentials.map((key) => process.env[key]).find(Boolean) ||
+      `mock-${decision.providerId}-token`;
+    await upsertProviderCredential({
+      orgId: project.orgId,
+      projectId: project.id,
+      provider: decision.providerId,
+      purpose: "execution",
+      plaintextSecret: secret,
+    });
+  }
 }
 
 export async function persistenceHealth() {

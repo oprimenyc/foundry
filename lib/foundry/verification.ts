@@ -32,12 +32,15 @@ export async function verifyRunIndependently(
   const run = snapshot.runs.find((item) => item.id === runId);
   if (!run) throw new Error(`Run ${runId} not found`);
 
+  // Generic references first; provider-named keys accepted for pre-M2 runs.
+  const deploymentUrl = run.providerReferences.deploymentUrl || run.providerReferences.vercelDeploymentUrl;
+  const repoUrl = run.providerReferences.repoUrl || run.providerReferences.githubRepoUrl;
   const targets: VerificationRecord["target"][] = [];
-  if (run.providerReferences.vercelDeploymentUrl) {
-    targets.push({ kind: "deployment_url", reference: run.providerReferences.vercelDeploymentUrl });
+  if (deploymentUrl) {
+    targets.push({ kind: "deployment_url", reference: deploymentUrl });
   }
-  if (run.providerReferences.githubRepoUrl) {
-    targets.push({ kind: "repository_url", reference: run.providerReferences.githubRepoUrl });
+  if (repoUrl) {
+    targets.push({ kind: "repository_url", reference: repoUrl });
   }
   if (targets.length === 0) {
     const record: VerificationRecord = {

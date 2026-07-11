@@ -2,6 +2,7 @@ import { SagaOrchestrator } from "@/lib/orchestration/saga";
 import { createEvidenceRecord, createEventRecord, createRollbackRecord, createStepRecord, getStoreSnapshot, insertRecord, updateRecords } from "./store";
 import { getProviderAdapter, ProviderError, type ProviderAdapter, type ProviderExecutionInput, type ProviderExecutionResult } from "./providers";
 import { toExecutionPlan } from "./plan";
+import { normalizeCategory } from "./universal/types";
 import type {
   DeploymentPlanRecord,
   DeploymentRunRecord,
@@ -233,15 +234,11 @@ export async function executeRun(runId: string) {
           }
         }
 
-        if (planStep.provider === "github") {
-          ctx.providerReferences.githubRepoUrl = String(result.output.repoUrl || "");
-        }
-        if (planStep.provider === "vercel" && planStep.action === "create_project") {
-          ctx.providerReferences.vercelProjectId = String(result.output.projectId || "");
-        }
-        if (planStep.provider === "vercel" && planStep.action === "trigger_deployment") {
-          ctx.providerReferences.vercelDeploymentUrl = String(result.output.deploymentUrl || "");
-          ctx.providerReferences.vercelDeploymentId = String(result.output.deploymentId || "");
+        // Provider-agnostic reference propagation: adapters declare which
+        // generic references (repoUrl, deploymentUrl, …) their result exposes.
+        // The engine merges them; it never branches on a provider name.
+        for (const [key, value] of Object.entries(result.references ?? {})) {
+          if (value) ctx.providerReferences[key] = value;
         }
 
         let rollbackActionId: string | undefined;
@@ -355,34 +352,57 @@ export async function executeRun(runId: string) {
   });
 }
 
+/**
+ * Capability-derived launch evidence: which references a run must have is a
+ * function of the CATEGORIES its plan exercised — never of vendor names.
+ */
+const REQUIRED_REFERENCES_BY_CATEGORY: Record<string, string[]> = {
+  repository: ["repoUrl"],
+  hosting: ["deploymentUrl"],
+};
+
 async function verifyRun(context: ExecutionContext): Promise<LaunchEvidenceRecord> {
   const latest = await getStoreSnapshot();
   const run = latest.runs.find((item) => item.id === context.run.id);
   const completedSteps = latest.steps.filter((step) => step.runId === context.run.id && step.status === "completed");
-  const deploymentUrl = run?.providerReferences.vercelDeploymentUrl || "";
   if (!run) throw new Error("Missing run for verification");
+
+  const references = { ...run.providerReferences };
+  // Legacy runs recorded provider-named keys; read them as their generic form.
+  references.repoUrl = references.repoUrl || references.githubRepoUrl || "";
+  references.deploymentUrl = references.deploymentUrl || references.vercelDeploymentUrl || "";
+
+  const planCategories = new Set<string>();
+  for (const step of context.plan.steps) {
+    try {
+      planCategories.add(normalizeCategory(getProviderAdapter(step.provider).capability));
+    } catch {
+      // Unknown provider at verification time reads as a failed requirement below.
+      planCategories.add("unknown");
+    }
+  }
+  const requiredReferences = Array.from(planCategories).flatMap(
+    (category) => REQUIRED_REFERENCES_BY_CATEGORY[category] ?? []
+  );
+  const missingReferences = requiredReferences.filter((key) => !references[key]);
+
   return createEvidenceRecord({
     runId: run.id,
     claims: [
-      "repository exists",
-      "deployment reached terminal success",
+      "all plan steps completed",
+      "capability-required references recorded",
       "persisted run state matches provider state",
-      "required steps completed",
       "rollback metadata exists",
     ],
     evidence: [
-      { key: "repository", value: run.providerReferences.githubRepoUrl || "missing" },
-      { key: "deploymentUrl", value: deploymentUrl || "missing" },
+      ...requiredReferences.map((key) => ({ key, value: references[key] || "missing" })),
       { key: "completedSteps", value: String(completedSteps.length) },
+      { key: "planSteps", value: String(context.plan.steps.length) },
       { key: "rollbackActions", value: String(latest.rollbacks.filter((item) => item.runId === run.id).length) },
     ],
     result:
-      run.providerReferences.githubRepoUrl &&
-      deploymentUrl &&
-      completedSteps.length === context.plan.steps.length
-        ? "passed"
-        : "failed",
-    verifierVersion: "foundry-launch-verifier@1",
+      missingReferences.length === 0 && completedSteps.length === context.plan.steps.length ? "passed" : "failed",
+    verifierVersion: "foundry-launch-verifier@2",
   });
 }
 

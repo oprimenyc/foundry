@@ -2,10 +2,14 @@ import { z } from "zod";
 import type { DeploymentPlanRecord, DeploymentPlanStepRecord } from "./types";
 import { getProviderAdapter } from "./providers";
 import { UnknownProviderError } from "./registry";
+import { selectProvider } from "./universal/selection";
+import { NoEligibleProviderError, type TenantPolicy } from "./universal/types";
 
 const PlanStepSchema = z.object({
   id: z.string().min(1),
+  // "auto" delegates vendor choice to the selection engine via `category`.
   provider: z.string().min(1),
+  category: z.string().min(1).optional(),
   action: z.string().min(1).max(64),
   name: z.string().min(1),
   dependsOn: z.array(z.string()).default([]),
@@ -33,7 +37,10 @@ export const DraftPlanSchema = z.object({
 
 export type DraftPlan = z.infer<typeof DraftPlanSchema>;
 
-export function validateDraftPlan(draft: unknown): { ok: true; plan: DraftPlan } | { ok: false; errors: string[] } {
+export function validateDraftPlan(
+  draft: unknown,
+  options: { tenantPolicy?: TenantPolicy } = {}
+): { ok: true; plan: DraftPlan } | { ok: false; errors: string[] } {
   const parsed = DraftPlanSchema.safeParse(draft);
   if (!parsed.success) {
     return { ok: false, errors: parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`) };
@@ -42,6 +49,25 @@ export function validateDraftPlan(draft: unknown): { ok: true; plan: DraftPlan }
   const plan = parsed.data;
   const errors: string[] = [];
   const stepIds = new Set(plan.steps.map((step) => step.id));
+
+  // Provider-agnostic steps: `provider: "auto"` + `category` lets the
+  // selection engine choose the vendor. Fails closed with every rejection
+  // reason when no provider is eligible.
+  for (const step of plan.steps) {
+    if (step.provider !== "auto") continue;
+    if (!step.category) {
+      errors.push(`step ${step.id} uses provider "auto" but declares no category`);
+      continue;
+    }
+    try {
+      const decision = selectProvider({ category: step.category, action: step.action, tenantPolicy: options.tenantPolicy });
+      step.provider = decision.providerId;
+      step.config = { ...step.config, selectedBy: decision.engineVersion };
+    } catch (error) {
+      if (error instanceof NoEligibleProviderError) errors.push(`step ${step.id}: ${error.message}`);
+      else throw error;
+    }
+  }
 
   if (plan.steps.length > plan.budget.maxSteps) {
     errors.push("steps exceed execution budget");

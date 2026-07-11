@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import type { ProviderAction } from "./types";
 import { ProviderRegistry } from "./registry";
+import { PROVIDER_CATEGORIES, normalizeCategory, type ProviderCategory } from "./universal/types";
 import { VercelAdapter as VercelHttpClient } from "@/lib/providers/vercel.adapter";
 import { GitHubAdapter as GitHubHttpClient } from "@/lib/providers/github.adapter";
 import { ProviderError as HttpProviderError } from "@/lib/providers/http-client";
@@ -22,6 +23,12 @@ export interface ProviderExecutionInput {
 export interface ProviderExecutionResult {
   providerReference: string;
   output: Record<string, unknown>;
+  /**
+   * Generic, provider-agnostic references (repoUrl, deploymentUrl, …) that the
+   * execution engine merges into the run's providerReferences. Adapters own
+   * the mapping; the engine never branches on a provider name.
+   */
+  references?: Record<string, string>;
   evidenceReference?: string;
 }
 
@@ -29,7 +36,9 @@ export interface ProviderCompensationInput extends ProviderExecutionInput {
   providerReference?: string;
 }
 
-export type ProviderCapability = "repository" | "deployment" | "dns" | "email" | "payments" | "telephony" | "storage";
+// Capability is now the universal category set plus legacy aliases
+// ("deployment" → hosting, "telephony" → sms) kept for pre-M2 adapters/plans.
+export type ProviderCapability = ProviderCategory | "deployment" | "telephony";
 
 export interface ProviderAdapter {
   provider: string;
@@ -102,13 +111,15 @@ class MockGitHubAdapter implements ProviderAdapter {
       const existing = this.repos.get(key);
       if (existing) return existing;
       const repoName = String(input.config.repositoryName || input.config.projectName || "foundry-app");
+      const repoUrl = `https://github.com/mock-org/${repoName}`;
       const result = {
         providerReference: `gh_repo_${randomUUID()}`,
         output: {
-          repoUrl: `https://github.com/mock-org/${repoName}`,
+          repoUrl,
           repositoryId: key,
           defaultBranch: "main",
         },
+        references: { repoUrl },
         evidenceReference: `github:${repoName}`,
       };
       this.repos.set(key, result);
@@ -116,7 +127,7 @@ class MockGitHubAdapter implements ProviderAdapter {
     }
 
     if (action === "verify_repository") {
-      const repoUrl = String(input.providerReferences.githubRepoUrl || "");
+      const repoUrl = String(input.providerReferences.repoUrl || input.providerReferences.githubRepoUrl || "");
       if (!repoUrl) throw new Error("repository not found for verification");
       return {
         providerReference: `gh_verify_${randomUUID()}`,
@@ -152,16 +163,18 @@ class LocalGitAdapter implements ProviderAdapter {
       const existing = this.repos.get(key);
       if (existing) return existing;
       const repoName = String(input.config.repositoryName || input.config.projectName || "foundry-app");
+      const repoUrl = `file:///var/foundry/repos/${repoName}.git`;
       const result = {
         providerReference: `local_repo_${randomUUID()}`,
-        output: { repoUrl: `file:///var/foundry/repos/${repoName}.git`, repositoryId: key, defaultBranch: "main" },
+        output: { repoUrl, repositoryId: key, defaultBranch: "main" },
+        references: { repoUrl },
         evidenceReference: `local-git:${repoName}`,
       };
       this.repos.set(key, result);
       return result;
     }
     if (action === "verify_repository") {
-      const repoUrl = String(input.providerReferences.githubRepoUrl || input.providerReferences.repoUrl || "");
+      const repoUrl = String(input.providerReferences.repoUrl || input.providerReferences.githubRepoUrl || "");
       if (!repoUrl) throw new Error("repository not found for verification");
       return { providerReference: `local_verify_${randomUUID()}`, output: { repoUrl, verified: true }, evidenceReference: repoUrl };
     }
@@ -186,11 +199,12 @@ class MockVercelAdapter implements ProviderAdapter {
       const existing = this.projects.get(key);
       if (existing) return existing;
       const projectName = String(input.config.projectName || input.config.repositoryName || "foundry-app");
-      const repoUrl = String(input.providerReferences.githubRepoUrl || "");
-      if (!repoUrl) throw new Error("missing GitHub repository URL");
+      const repoUrl = String(input.providerReferences.repoUrl || input.providerReferences.githubRepoUrl || "");
+      if (!repoUrl) throw new Error("missing repository URL");
       const result = {
         providerReference: `vercel_project_${randomUUID()}`,
         output: { projectId: key, projectName, repoUrl },
+        references: { hostingProjectId: key },
         evidenceReference: `vercel:${projectName}`,
       };
       this.projects.set(key, result);
@@ -198,21 +212,23 @@ class MockVercelAdapter implements ProviderAdapter {
     }
 
     if (action === "trigger_deployment") {
-      const projectId = String(input.providerReferences.vercelProjectId || "");
-      if (!projectId) throw new Error("missing Vercel project");
+      const projectId = String(input.providerReferences.hostingProjectId || input.providerReferences.vercelProjectId || "");
+      if (!projectId) throw new Error("missing hosting project");
+      const deploymentUrl = `https://${input.projectId}.mock-vercel.app`;
       return {
         providerReference: `vercel_deploy_${randomUUID()}`,
         output: {
           deploymentId: `deploy_${input.runId}`,
-          deploymentUrl: `https://${input.projectId}.mock-vercel.app`,
+          deploymentUrl,
           state: "READY",
         },
-        evidenceReference: `https://${input.projectId}.mock-vercel.app`,
+        references: { deploymentUrl, deploymentId: `deploy_${input.runId}` },
+        evidenceReference: deploymentUrl,
       };
     }
 
     if (action === "verify_deployment") {
-      const deploymentUrl = String(input.providerReferences.vercelDeploymentUrl || "");
+      const deploymentUrl = String(input.providerReferences.deploymentUrl || input.providerReferences.vercelDeploymentUrl || "");
       if (!deploymentUrl) throw new Error("deployment URL missing");
       return {
         providerReference: `vercel_verify_${randomUUID()}`,
@@ -264,11 +280,12 @@ export class GitHubHttpAdapter implements ProviderAdapter {
             defaultBranch: verified.default_branch,
             private: verified.private,
           },
+          references: { repoUrl: verified.html_url },
           evidenceReference: `github:${verified.full_name}#${verified.id}`,
         };
       }
       if (action === "verify_repository") {
-        const fromUrl = String(input.providerReferences.githubRepoUrl || "").replace(/^https:\/\/github\.com\//, "");
+        const fromUrl = String(input.providerReferences.repoUrl || input.providerReferences.githubRepoUrl || "").replace(/^https:\/\/github\.com\//, "");
         const fullName = String(input.config.repositoryFullName || fromUrl || "");
         const [owner, repo] = fullName.split("/");
         if (!owner || !repo) throw new ProviderError("missing repository reference to verify", { category: "validation" });
@@ -320,36 +337,39 @@ export class VercelHttpAdapter implements ProviderAdapter {
   async execute(action: ProviderAction, input: ProviderExecutionInput): Promise<ProviderExecutionResult> {
     if (action === "create_project") {
       const projectName = String(input.config.projectName || input.config.repositoryName || "foundry-app");
-      const repoUrl = String(input.providerReferences.githubRepoUrl || "");
-      if (!repoUrl) throw new Error("missing GitHub repository URL");
+      const repoUrl = String(input.providerReferences.repoUrl || input.providerReferences.githubRepoUrl || "");
+      if (!repoUrl) throw new Error("missing repository URL");
       const created = await this.client.createProject({ name: projectName, repoUrl });
       return {
         providerReference: created.id,
         output: { projectId: created.id, projectName: created.name, repoUrl },
+        references: { hostingProjectId: created.id, hostingProjectName: created.name },
         evidenceReference: `vercel:${created.name}`,
       };
     }
     if (action === "trigger_deployment") {
-      const projectName = String(input.config.projectName || input.providerReferences.vercelProjectName || "foundry-app");
-      const repoUrl = String(input.providerReferences.githubRepoUrl || "");
-      if (!repoUrl) throw new ProviderError("missing GitHub repository URL for deployment", { category: "validation" });
+      const projectName = String(input.config.projectName || input.providerReferences.hostingProjectName || input.providerReferences.vercelProjectName || "foundry-app");
+      const repoUrl = String(input.providerReferences.repoUrl || input.providerReferences.githubRepoUrl || "");
+      if (!repoUrl) throw new ProviderError("missing repository URL for deployment", { category: "validation" });
       const deployment = await this.client.createDeployment({
         projectName,
         repoUrl,
         ref: input.config.gitRef ? String(input.config.gitRef) : undefined,
       });
+      const deploymentUrl = deployment.url.startsWith("http") ? deployment.url : `https://${deployment.url}`;
       return {
         providerReference: deployment.id,
         output: {
           deploymentId: deployment.id,
-          deploymentUrl: deployment.url.startsWith("http") ? deployment.url : `https://${deployment.url}`,
+          deploymentUrl,
           readyState: deployment.readyState,
         },
+        references: { deploymentUrl, deploymentId: deployment.id },
         evidenceReference: `vercel:deployment:${deployment.id}`,
       };
     }
     if (action === "verify_deployment") {
-      const deploymentId = String(input.config.deploymentId || input.providerReferences.vercelDeploymentId || "");
+      const deploymentId = String(input.config.deploymentId || input.providerReferences.deploymentId || input.providerReferences.vercelDeploymentId || "");
       if (!deploymentId) throw new ProviderError("missing deployment id to verify", { category: "validation" });
       // Step timeout (execution policy) bounds this poll loop.
       const deployment = await this.client.waitForDeployment(deploymentId);
@@ -397,6 +417,7 @@ class MockDomainAdapter implements ProviderAdapter {
     return {
       providerReference: reference,
       output: { mock: true, provider: this.provider, action, reference },
+      references: { [`${this.capability}Reference`]: reference },
       evidenceReference: `${this.provider}:${reference}`,
     };
   }
@@ -433,6 +454,7 @@ export class CloudflareDnsAdapter implements ProviderAdapter {
         return {
           providerReference: `${zoneId}/${verified.id}`,
           output: { recordId: verified.id, type: verified.type, name: verified.name, content: verified.content },
+          references: { dnsRecordReference: `${zoneId}/${verified.id}` },
           evidenceReference: `cloudflare:dns:${zoneId}/${verified.id}`,
         };
       }
@@ -490,6 +512,7 @@ export class ResendEmailAdapter implements ProviderAdapter {
       return {
         providerReference: sent.id,
         output: { emailId: sent.id, to },
+        references: { emailId: sent.id },
         evidenceReference: `resend:email:${sent.id}`,
       };
     } catch (error) {
@@ -520,11 +543,12 @@ export class StripePaymentsAdapter implements ProviderAdapter {
         return {
           providerReference: verified.id,
           output: { productId: verified.id, productName: verified.name, active: verified.active },
+          references: { productId: verified.id },
           evidenceReference: `stripe:product:${verified.id}`,
         };
       }
       if (action === "verify_product") {
-        const productId = String(input.config.productId || input.providerReferences.stripeProductId || "");
+        const productId = String(input.config.productId || input.providerReferences.productId || input.providerReferences.stripeProductId || "");
         if (!productId) throw new ProviderError("missing productId to verify", { category: "validation" });
         const found = await this.client.getProduct(productId);
         return {
@@ -574,6 +598,7 @@ export class SignalWireTelephonyAdapter implements ProviderAdapter {
       return {
         providerReference: sent.sid,
         output: { messageSid: sent.sid, status: sent.status, to },
+        references: { messageSid: sent.sid },
         evidenceReference: `signalwire:sms:${sent.sid}`,
       };
     } catch (error) {
@@ -583,13 +608,23 @@ export class SignalWireTelephonyAdapter implements ProviderAdapter {
   }
 }
 
-const repositoryRegistry = new ProviderRegistry<ProviderAdapter>("repository");
-const deploymentRegistry = new ProviderRegistry<ProviderAdapter>("deployment");
-const dnsRegistry = new ProviderRegistry<ProviderAdapter>("dns");
-const emailRegistry = new ProviderRegistry<ProviderAdapter>("email");
-const paymentsRegistry = new ProviderRegistry<ProviderAdapter>("payments");
-const telephonyRegistry = new ProviderRegistry<ProviderAdapter>("telephony");
-const storageRegistry = new ProviderRegistry<ProviderAdapter>("storage");
+// One execution registry per universal category. Legacy capability ids
+// ("deployment", "telephony") normalize to their categories at every boundary.
+const registries = new Map<ProviderCategory, ProviderRegistry<ProviderAdapter>>(
+  PROVIDER_CATEGORIES.map((category) => [category, new ProviderRegistry<ProviderAdapter>(category)])
+);
+
+function registryFor(capability: string): ProviderRegistry<ProviderAdapter> {
+  return registries.get(normalizeCategory(capability))!;
+}
+
+const repositoryRegistry = registryFor("repository");
+const deploymentRegistry = registryFor("deployment");
+const dnsRegistry = registryFor("dns");
+const emailRegistry = registryFor("email");
+const paymentsRegistry = registryFor("payments");
+const telephonyRegistry = registryFor("telephony");
+const storageRegistry = registryFor("storage");
 
 repositoryRegistry.register(
   process.env.GITHUB_TOKEN ? new GitHubHttpAdapter(process.env.GITHUB_TOKEN) : new MockGitHubAdapter()
@@ -603,12 +638,17 @@ deploymentRegistry.register(
 dnsRegistry.register(
   process.env.CLOUDFLARE_API_TOKEN
     ? new CloudflareDnsAdapter(process.env.CLOUDFLARE_API_TOKEN)
-    : new MockDomainAdapter("cloudflare", "dns", ["create_dns_record", "verify_dns_record"], ["create_dns_record"])
+    : new MockDomainAdapter(
+        "cloudflare",
+        "dns",
+        ["create_dns_record", "verify_dns_record", "issue_certificate", "verify_certificate"],
+        ["create_dns_record", "issue_certificate"]
+      )
 );
 emailRegistry.register(
   process.env.RESEND_API_KEY
     ? new ResendEmailAdapter(process.env.RESEND_API_KEY)
-    : new MockDomainAdapter("resend", "email", ["send_email"])
+    : new MockDomainAdapter("resend", "email", ["send_email", "configure_email_domain", "configure_catch_all"], ["configure_email_domain", "configure_catch_all"])
 );
 paymentsRegistry.register(
   process.env.STRIPE_SECRET_KEY
@@ -628,42 +668,47 @@ telephonyRegistry.register(
 // until VERIDIAN artifact requirements land (documented launch-profile gap).
 storageRegistry.register(new MockDomainAdapter("local-storage", "storage", ["store_artifact", "verify_artifact"], ["store_artifact"]));
 
-const registries: Record<ProviderCapability, ProviderRegistry<ProviderAdapter>> = {
-  repository: repositoryRegistry,
-  deployment: deploymentRegistry,
-  dns: dnsRegistry,
-  email: emailRegistry,
-  payments: paymentsRegistry,
-  telephony: telephonyRegistry,
-  storage: storageRegistry,
-};
-
 /** Resolves an adapter by providerId alone (provider ids are unique across capabilities). */
 export function getProviderAdapter(provider: string): ProviderAdapter {
-  for (const registry of Object.values(registries)) {
+  for (const registry of Array.from(registries.values())) {
     if (registry.has(provider)) return registry.get(provider);
   }
   // Fails closed with a typed, capability-agnostic error rather than crashing on undefined.
   return repositoryRegistry.get(provider);
 }
 
-export function listRegisteredProviders(capability?: ProviderCapability): string[] {
-  if (capability) return registries[capability].list();
-  return Array.from(new Set(Object.values(registries).flatMap((registry) => registry.list()))).sort();
+export function listRegisteredProviders(capability?: ProviderCapability | string): string[] {
+  if (capability) return registryFor(capability).list();
+  return Array.from(new Set(Array.from(registries.values()).flatMap((registry) => registry.list()))).sort();
 }
 
 export function registerProviderAdapter(adapter: ProviderAdapter): void {
-  registries[adapter.capability].register(adapter);
+  registryFor(adapter.capability).register(adapter);
 }
 
-/** Capability metadata: which providers exist per capability and which actions each declares. */
+/**
+ * Capability metadata: which providers exist per capability and which actions
+ * each declares. Emits every universal category plus the legacy alias keys
+ * ("deployment", "telephony") for pre-M2 consumers.
+ */
 export function listProviderMetadata() {
   const metadata: Record<string, Array<{ provider: string; actions: ProviderAction[]; mock: boolean }>> = {};
-  for (const [capability, registry] of Object.entries(registries)) {
-    metadata[capability] = registry.list().map((id) => {
+  const describe = (registry: ProviderRegistry<ProviderAdapter>) =>
+    registry.list().map((id) => {
       const adapter = registry.get(id);
-      return { provider: adapter.provider, actions: adapter.actions, mock: adapter instanceof MockDomainAdapter || adapter.constructor.name.startsWith("Mock") };
+      return {
+        provider: adapter.provider,
+        actions: adapter.actions,
+        mock:
+          adapter instanceof MockDomainAdapter ||
+          adapter.constructor.name.startsWith("Mock") ||
+          ("manifest" in adapter && (adapter as { manifest?: { runtimeStatus?: string } }).manifest?.runtimeStatus === "mock"),
+      };
     });
+  for (const [category, registry] of Array.from(registries.entries())) {
+    metadata[category] = describe(registry);
   }
+  metadata.deployment = metadata.hosting;
+  metadata.telephony = metadata.sms;
   return metadata;
 }

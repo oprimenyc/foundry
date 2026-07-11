@@ -39,6 +39,8 @@ export interface ProjectRecord {
 export interface DeploymentPlanStepRecord {
   id: string;
   provider: ProviderKind;
+  /** Capability category (set when the step was authored provider-agnostically). */
+  category?: string;
   action: ProviderAction;
   name: string;
   dependsOn: string[];

@@ -11,7 +11,8 @@
     "test": "node --import tsx --test tests/**/*.test.ts",
     "proof:mock": "node --import tsx scripts/mock-e2e.ts",
     "proof:github": "node --import tsx scripts/github-proof.ts",
-    "proof:profile": "node --import tsx scripts/dyln-profile-proof.ts"
+    "proof:profile": "node --import tsx scripts/dyln-profile-proof.ts",
+    "proof:m2": "node --import tsx scripts/m2-universal-proof.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.57.0",

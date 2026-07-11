@@ -184,8 +184,9 @@ test("full mocked project-to-deployment path completes and persists evidence", a
   assert.equal(snapshot.plans.length, 1);
   assert.equal(snapshot.runs.length, 1);
   assert.equal(snapshot.events.some((event) => event.status === "completed"), true);
-  assert.equal(snapshot.runs[0].providerReferences.githubRepoUrl.startsWith("https://github.com/mock-org/"), true);
-  assert.equal(snapshot.runs[0].providerReferences.vercelDeploymentUrl.includes(".mock-vercel.app"), true);
+  // Generic reference keys: the engine no longer records provider-named keys.
+  assert.equal(snapshot.runs[0].providerReferences.repoUrl.startsWith("https://github.com/mock-org/"), true);
+  assert.equal(snapshot.runs[0].providerReferences.deploymentUrl.includes(".mock-vercel.app"), true);
 });
 
 test("logs replay in order and duplicate idempotency key does not duplicate resources", async () => {

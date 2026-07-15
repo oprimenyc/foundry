@@ -398,6 +398,9 @@ export async function executeRun(runId: string) {
     extraEvidenceReferences: latestBeforeManifest.events
       .filter((event) => event.runId === run.id && event.evidenceReference)
       .map((event) => String(event.evidenceReference)),
+    rollbackEvidenceReferences: latestBeforeManifest.rollbacks
+      .filter((rollback) => rollback.runId === run.id)
+      .map((rollback) => `foundry:rollback:${rollback.id}:${rollback.status}`),
     producerIdentity: "foundry-runtime",
   });
   await insertRecord("evidenceManifests", manifest);

@@ -1,11 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { constants, createVerify, generateKeyPairSync } from "crypto";
 import { mkdir, rm } from "fs/promises";
 import path from "path";
 import { createProject, createPlanForProject, createRunForProject, getRunView, listRunEvents, persistenceHealth, seedMockCredentials } from "@/lib/foundry/service";
 import { executeRun, requestRollback, resumeIncompleteRuns } from "@/lib/foundry/execution";
 import { getSecretsService } from "@/lib/foundry/credentials";
 import { getStoreSnapshot, resetFoundryPersistence } from "@/lib/foundry/store";
+import { canonicalJson, issueSignedEvidenceManifest, RsaPssEvidenceManifestSigner } from "@/lib/foundry/evidence-manifest";
 import { POST as createProjectRoute } from "@/app/api/projects/route";
 import { POST as sessionLoginRoute } from "@/app/api/auth/session/route";
 import { POST as cancelRoute } from "@/app/api/projects/[id]/runs/[runId]/cancel/route";
@@ -31,6 +33,12 @@ async function resetEnv(name: string, mode: "file" | "sqlite" = "file") {
   process.env.FOUNDRY_PERSISTENCE = mode;
   process.env.FOUNDRY_STORE_FILE = path.join(testDir, `${name}.json`);
   process.env.FOUNDRY_SQLITE_FILE = path.join(testDir, `${name}.sqlite`);
+  delete process.env.FOUNDRY_EVIDENCE_SIGNER_PROVIDER;
+  delete process.env.FOUNDRY_EVIDENCE_SIGNING_KEY;
+  delete process.env.FOUNDRY_EVIDENCE_SIGNING_KEY_ID;
+  delete process.env.FOUNDRY_EVIDENCE_SIGNING_KEY_VERSION;
+  delete process.env.FOUNDRY_EVIDENCE_KMS_PRIVATE_KEY_PEM;
+  delete process.env.FOUNDRY_EVIDENCE_KMS_COMMAND;
   Object.assign(process.env, { NODE_ENV: "test" });
   resetFoundryPersistence();
   await mkdir(testDir, { recursive: true });
@@ -185,12 +193,69 @@ test("full mocked project-to-deployment path completes and persists evidence", a
   assert.equal(snapshot.runs.length, 1);
   assert.equal(snapshot.evidenceManifests.length, 1);
   assert.equal(snapshot.evidenceManifests[0].signatureAlgorithm, "HMAC-SHA256");
+  assert.equal(snapshot.evidenceManifests[0].signerProvider, "local-hmac");
   assert.equal(snapshot.evidenceManifests[0].signerKeyId, "foundry-local-dev-key");
+  assert.equal(snapshot.evidenceManifests[0].signerKeyVersion, "v1");
+  assert.equal(snapshot.evidenceManifests[0].evidenceItems.some((item) => item.type === "rollback-evidence"), true);
   assert.ok(snapshot.runs[0].evidenceReferences.includes(`foundry:manifest:${snapshot.evidenceManifests[0].id}`));
   assert.equal(snapshot.events.some((event) => event.status === "completed"), true);
   // Generic reference keys: the engine no longer records provider-named keys.
   assert.equal(snapshot.runs[0].providerReferences.repoUrl.startsWith("https://github.com/mock-org/"), true);
   assert.equal(snapshot.runs[0].providerReferences.deploymentUrl.includes(".mock-vercel.app"), true);
+});
+
+test("evidence manifest supports versioned KMS-style RSA signing", () => {
+  const keyPair = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const privateKey = keyPair.privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+  const publicKey = keyPair.publicKey.export({ type: "spki", format: "pem" }).toString();
+  const manifest = issueSignedEvidenceManifest({
+    run: {
+      id: "run_kms",
+      projectId: "proj_kms",
+      planId: "plan_kms",
+      status: "completed",
+      progress: 100,
+      createdAt: "2026-07-15T00:00:00.000Z",
+      retryCount: 0,
+      idempotencyKey: "exec-kms",
+      rollbackStatus: "available",
+      providerReferences: {},
+      evidenceReferences: [],
+    },
+    plan: {
+      id: "plan_kms",
+      projectId: "proj_kms",
+      prompt: "kms release",
+      status: "validated",
+      config: { name: "KMS", hosting: "mock", repository: "mock" },
+      budget: { maxSteps: 1, maxRuntimeMs: 1000 },
+      steps: [],
+      validationErrors: [],
+      createdAt: "2026-07-15T00:00:00.000Z",
+    },
+    evidence: {
+      id: "evidence_kms",
+      runId: "run_kms",
+      claims: ["kms signed"],
+      evidence: [{ key: "release", value: "ready" }],
+      result: "passed",
+      createdAt: "2026-07-15T00:00:00.000Z",
+      verifiedAt: "2026-07-15T00:00:00.000Z",
+      verifierVersion: "test",
+    },
+    tenantId: "tenant-a",
+    rollbackEvidenceReferences: ["foundry:rollback:rb_1:pending"],
+    signer: new RsaPssEvidenceManifestSigner(privateKey, "kms-key", "v2", "external-kms"),
+  });
+  const verifier = createVerify("sha256").update(canonicalJson({ manifestHash: manifest.manifestHash }), "utf8");
+  const ok = verifier.verify(
+    { key: publicKey, padding: constants.RSA_PKCS1_PSS_PADDING, saltLength: 32 },
+    Buffer.from(manifest.signature.replace("rsa-pss-sha256:", ""), "base64")
+  );
+  assert.equal(manifest.signatureAlgorithm, "RSASSA-PSS-SHA256");
+  assert.equal(manifest.signerProvider, "external-kms");
+  assert.equal(manifest.signerKeyVersion, "v2");
+  assert.equal(ok, true);
 });
 
 test("logs replay in order and duplicate idempotency key does not duplicate resources", async () => {

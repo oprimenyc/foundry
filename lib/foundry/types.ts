@@ -156,8 +156,10 @@ export interface SignedEvidenceManifestRecord {
     type: string;
   }>;
   manifestHash: string;
-  signatureAlgorithm: "HMAC-SHA256";
+  signatureAlgorithm: "HMAC-SHA256" | "RSASSA-PSS-SHA256";
+  signerProvider: string;
   signerKeyId: string;
+  signerKeyVersion: string;
   signature: string;
   issuedAt: string;
 }

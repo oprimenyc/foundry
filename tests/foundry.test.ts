@@ -183,6 +183,10 @@ test("full mocked project-to-deployment path completes and persists evidence", a
   assert.equal(snapshot.projects.length, 1);
   assert.equal(snapshot.plans.length, 1);
   assert.equal(snapshot.runs.length, 1);
+  assert.equal(snapshot.evidenceManifests.length, 1);
+  assert.equal(snapshot.evidenceManifests[0].signatureAlgorithm, "HMAC-SHA256");
+  assert.equal(snapshot.evidenceManifests[0].signerKeyId, "foundry-local-dev-key");
+  assert.ok(snapshot.runs[0].evidenceReferences.includes(`foundry:manifest:${snapshot.evidenceManifests[0].id}`));
   assert.equal(snapshot.events.some((event) => event.status === "completed"), true);
   // Generic reference keys: the engine no longer records provider-named keys.
   assert.equal(snapshot.runs[0].providerReferences.repoUrl.startsWith("https://github.com/mock-org/"), true);

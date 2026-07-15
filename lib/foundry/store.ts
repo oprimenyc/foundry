@@ -12,6 +12,7 @@ import {
   type ProjectRecord,
   type ProviderCredentialReferenceRecord,
   type RollbackActionRecord,
+  type SignedEvidenceManifestRecord,
 } from "./types";
 
 const DEFAULT_STORE: FoundryStore = {
@@ -23,6 +24,7 @@ const DEFAULT_STORE: FoundryStore = {
   events: [],
   rollbacks: [],
   evidence: [],
+  evidenceManifests: [],
   verifications: [],
 };
 
@@ -263,6 +265,10 @@ export function createEvidenceRecord(input: Omit<LaunchEvidenceRecord, "id" | "c
   const now = new Date().toISOString();
   return { ...input, id: newId("evidence"), createdAt: now, verifiedAt: now };
 }
+export function createEvidenceManifestRecord(input: Omit<SignedEvidenceManifestRecord, "id">): SignedEvidenceManifestRecord {
+  return { ...input, id: newId("manifest") };
+}
+
 
 export function createCredentialRecord(
   input: Omit<ProviderCredentialReferenceRecord, "id" | "createdAt">

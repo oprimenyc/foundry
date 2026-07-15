@@ -141,6 +141,27 @@ export interface LaunchEvidenceRecord {
   verifierVersion: string;
 }
 
+export interface SignedEvidenceManifestRecord {
+  id: string;
+  manifestVersion: "foundry-evidence-manifest@1";
+  executionId: string;
+  tenantId: string;
+  capabilityId: string;
+  producerIdentity: string;
+  executionTimestamp: string;
+  evidenceItems: Array<{
+    evidenceId: string;
+    reference: string;
+    hash: string;
+    type: string;
+  }>;
+  manifestHash: string;
+  signatureAlgorithm: "HMAC-SHA256";
+  signerKeyId: string;
+  signature: string;
+  issuedAt: string;
+}
+
 export interface DeploymentRunRecord {
   id: string;
   projectId: string;
@@ -189,5 +210,6 @@ export interface FoundryStore {
   events: ExecutionEventRecord[];
   rollbacks: RollbackActionRecord[];
   evidence: LaunchEvidenceRecord[];
+  evidenceManifests: SignedEvidenceManifestRecord[];
   verifications: VerificationRecord[];
 }

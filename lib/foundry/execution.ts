@@ -1,5 +1,6 @@
 import { SagaOrchestrator } from "@/lib/orchestration/saga";
 import { createEvidenceRecord, createEventRecord, createRollbackRecord, createStepRecord, getStoreSnapshot, insertRecord, updateRecords } from "./store";
+import { issueSignedEvidenceManifest } from "./evidence-manifest";
 import { getProviderAdapter, ProviderError, type ProviderAdapter, type ProviderExecutionInput, type ProviderExecutionResult } from "./providers";
 import { toExecutionPlan } from "./plan";
 import { normalizeCategory } from "./universal/types";
@@ -386,14 +387,34 @@ export async function executeRun(runId: string) {
 
   const evidence = await verifyRun(context);
   await insertRecord("evidence", evidence);
+  const latestBeforeManifest = await getStoreSnapshot();
+  const currentRun = latestBeforeManifest.runs.find((item) => item.id === run.id);
+  if (!currentRun) throw new Error("Missing run before evidence manifest issuance");
+  const manifest = issueSignedEvidenceManifest({
+    run: { ...currentRun, completedAt: new Date().toISOString(), terminalState: "success" },
+    plan,
+    evidence,
+    tenantId: project.orgId,
+    extraEvidenceReferences: latestBeforeManifest.events
+      .filter((event) => event.runId === run.id && event.evidenceReference)
+      .map((event) => String(event.evidenceReference)),
+    producerIdentity: "foundry-runtime",
+  });
+  await insertRecord("evidenceManifests", manifest);
   await updateRun(run.id, (current) => ({
     ...current,
     status: "completed",
     completedAt: new Date().toISOString(),
     terminalState: "success",
-    evidenceReferences: [...current.evidenceReferences, evidence.id],
+    evidenceReferences: [...current.evidenceReferences, evidence.id, `foundry:manifest:${manifest.id}`],
     progress: 100,
   }));
+  await appendEvent(context, {
+    stage: "verification",
+    status: "info",
+    sanitizedMessage: "Signed evidence manifest issued",
+    evidenceReference: `foundry:manifest:${manifest.id}`,
+  });
   await appendEvent(context, {
     stage: "verification",
     status: "completed",

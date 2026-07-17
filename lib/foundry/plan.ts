@@ -89,9 +89,9 @@ export function validateDraftPlan(
     for (const dep of step.dependsOn) {
       if (!stepIds.has(dep)) errors.push(`step ${step.id} depends on missing step ${dep}`);
     }
-    if (step.approvalRequired) {
-      errors.push(`step ${step.id} requires approval and cannot execute automatically`);
-    }
+    // Steps marked approvalRequired are NOT rejected: the execution engine
+    // pauses at them (RunStatus "awaiting_approval") and resumes on a human
+    // decision. See lib/foundry/human-gates.ts.
     if (step.action === "create_repository" && typeof step.config.repositoryName !== "string") {
       errors.push(`step ${step.id} missing repositoryName`);
     }

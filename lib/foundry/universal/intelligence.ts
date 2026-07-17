@@ -219,6 +219,40 @@ export function intelligenceSnapshot(): Array<
     }));
 }
 
+export function providerObservationSummary(providerId: string): {
+  total: number;
+  successes: number;
+  failures: number;
+  authFailures: number;
+  credentialFailures: number;
+  verificationFailures: number;
+  rollbacks: number;
+  rateLimits: number;
+  averageLatencyMs?: number;
+  lastSuccessAt?: string;
+} {
+  const entry = stateFor(providerId);
+  const latencySamples = entry.observations
+    .map((item) => item.latencyMs)
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  const count = (kind: ObservationKind) => entry.observations.filter((item) => item.kind === kind).length;
+  return {
+    total: entry.observations.length,
+    successes: count("execution_success"),
+    failures: count("execution_failure"),
+    authFailures: count("auth_failure"),
+    credentialFailures: count("credential_failure"),
+    verificationFailures: count("verification_failure"),
+    rollbacks: count("rollback"),
+    rateLimits: count("rate_limit"),
+    averageLatencyMs:
+      latencySamples.length > 0
+        ? Math.round(latencySamples.reduce((sum, value) => sum + value, 0) / latencySamples.length)
+        : undefined,
+    lastSuccessAt: entry.lastSuccessAt,
+  };
+}
+
 export function resetIntelligence(): void {
   intel.clear();
 }

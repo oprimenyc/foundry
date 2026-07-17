@@ -1,4 +1,4 @@
-import { SagaOrchestrator } from "@/lib/orchestration/saga";
+import { SagaOrchestrator, SagaPauseSignal } from "@/lib/orchestration/saga";
 import { createEvidenceRecord, createEventRecord, createRollbackRecord, createStepRecord, getStoreSnapshot, insertRecord, updateRecords } from "./store";
 import { issueSignedEvidenceManifest } from "./evidence-manifest";
 import { getProviderAdapter, ProviderError, type ProviderAdapter, type ProviderExecutionInput, type ProviderExecutionResult } from "./providers";
@@ -7,6 +7,9 @@ import { normalizeCategory } from "./universal/types";
 import { recordObservation } from "./universal/intelligence";
 import { authorizeStepExecution } from "@/lib/vault/execution-gate";
 import { redactString } from "@/lib/vault/redaction";
+import { evaluateGateRequirement, findGate, raiseGate } from "./human-gates";
+import { resolveExecutionMode } from "./routing";
+import { retainArtifact } from "./artifacts";
 import type {
   DeploymentPlanRecord,
   DeploymentRunRecord,
@@ -169,6 +172,49 @@ export async function executeRun(runId: string) {
           return existingStep.output;
         }
 
+        // Human gate: pause at this exact step when a human decision is required
+        // and not yet granted. Completed steps above have already been skipped,
+        // so the run resumes here after approval.
+        const requirement = evaluateGateRequirement(planStep);
+        if (requirement.required) {
+          const gates = (await getStoreSnapshot()).approvalGates;
+          const gate = findGate(gates, ctx.run.id, planStep.id);
+          if (gate?.status === "rejected") {
+            await appendEvent(ctx, {
+              stepId: existingStep?.id,
+              stage: "step",
+              status: "failed",
+              provider: planStep.provider,
+              sanitizedMessage: `Human gate rejected ${planStep.provider}.${planStep.action}${gate.note ? `: ${redactString(gate.note)}` : ""}`,
+            });
+            throw new Error(`human gate rejected step ${planStep.name}`);
+          }
+          if (gate?.status !== "approved") {
+            const activeGate = gate?.status === "pending" ? gate : await raiseGate({
+              runId: ctx.run.id,
+              projectId: ctx.project.id,
+              planStepId: planStep.id,
+              provider: planStep.provider,
+              action: planStep.action,
+              requirement,
+            });
+            await updateRun(ctx.run.id, (current) => ({ ...current, status: "awaiting_approval", currentStep: planStep.id }));
+            await appendEvent(ctx, {
+              stage: "step",
+              status: "info",
+              provider: planStep.provider,
+              sanitizedMessage: `Awaiting human approval for ${planStep.provider}.${planStep.action} (gate ${activeGate.id}): ${requirement.requiredAction}`,
+            });
+            throw new SagaPauseSignal(`run paused at ${planStep.name} for human approval`);
+          }
+          await appendEvent(ctx, {
+            stage: "step",
+            status: "info",
+            provider: planStep.provider,
+            sanitizedMessage: `Human gate approved for ${planStep.provider}.${planStep.action}${gate.decidedBy ? ` by ${redactString(gate.decidedBy)}` : ""}`,
+          });
+        }
+
         const stepRecord =
           existingStep ||
           createStepRecord({
@@ -221,6 +267,28 @@ export async function executeRun(runId: string) {
           });
           throw error;
         }
+        // Explicit provider routing mode, persisted to the event log. Foundry
+        // never silently falls back: a non-executable mode fails the step here.
+        const routing = resolveExecutionMode({ providerId: planStep.provider, action: planStep.action });
+        await appendEvent(ctx, {
+          stepId: stepRecord.id,
+          stage: "step",
+          status: "info",
+          provider: planStep.provider,
+          sanitizedMessage: `Routing ${planStep.provider}.${planStep.action} via ${routing.mode} (${routing.reasons.join("; ")})`,
+        });
+        if (!routing.executable) {
+          await updateStep(stepRecord.id, (current) => ({ ...current, status: "failed" }));
+          await appendEvent(ctx, {
+            stepId: stepRecord.id,
+            stage: "step",
+            status: "failed",
+            provider: planStep.provider,
+            sanitizedMessage: `${routing.mode} mode is not executable in this runtime — ${routing.reasons.join("; ")}`,
+          });
+          throw new ProviderError(`${planStep.provider}.${planStep.action} requires ${routing.mode} mode, which is not executable`, { category: "validation" });
+        }
+
         const executionInput: ProviderExecutionInput = {
           runId: ctx.run.id,
           stepId: stepRecord.id,
@@ -365,6 +433,16 @@ export async function executeRun(runId: string) {
   }
 
   const result = await orchestrator.execute();
+  if (result.paused) {
+    // Governed pause for a human gate. The run is already awaiting_approval and
+    // completed steps are preserved; do NOT fail or roll back.
+    await appendEvent(context, {
+      stage: "run",
+      status: "info",
+      sanitizedMessage: result.error || "Run paused for human approval",
+    });
+    return;
+  }
   if (!result.ok) {
     const failureCategory = mapFailureCategory(result.error || "internal");
     const rollingBack = failureCategory !== "cancelled";
@@ -404,6 +482,37 @@ export async function executeRun(runId: string) {
     producerIdentity: "foundry-runtime",
   });
   await insertRecord("evidenceManifests", manifest);
+
+  // Release artifact retention. A retention failure is a VISIBLE degraded mode
+  // (constitution §1): the run still succeeded, but the gap is recorded, never
+  // swallowed.
+  try {
+    await retainArtifact({
+      kind: "release_plan",
+      content: plan,
+      retentionClass: "RELEASE",
+      producer: "foundry-runtime",
+      source: `run:${run.id}`,
+      runId: run.id,
+      projectId: project.id,
+    });
+    await retainArtifact({
+      kind: "evidence_manifest",
+      content: manifest,
+      retentionClass: "AUDIT",
+      producer: "foundry-runtime",
+      source: `manifest:${manifest.id}`,
+      runId: run.id,
+      projectId: project.id,
+    });
+  } catch (error) {
+    await appendEvent(context, {
+      stage: "verification",
+      status: "info",
+      sanitizedMessage: `DEGRADED: artifact retention failed — ${redactString(error instanceof Error ? error.message : String(error))}`,
+    });
+  }
+
   await updateRun(run.id, (current) => ({
     ...current,
     status: "completed",
@@ -487,6 +596,21 @@ export async function requestRollback(runId: string) {
     rollbackStatus: "running",
   }));
   await startRunWhenIdle(runId);
+}
+
+/**
+ * Resume a run that paused for a human gate. Only valid when the run is
+ * awaiting_approval; sets it back to running and re-enters execution, which
+ * skips completed steps and re-evaluates the gate (now approved) at the exact
+ * paused step. Idempotent against double-resume via the active-run guard.
+ */
+export async function resumeRunAfterGate(runId: string) {
+  const snapshot = await getStoreSnapshot();
+  const run = snapshot.runs.find((item) => item.id === runId);
+  if (!run) throw new Error(`Run ${runId} not found`);
+  if (run.status !== "awaiting_approval") return; // nothing to resume
+  await updateRun(runId, (current) => ({ ...current, status: "running" }));
+  await startRunExecution(runId);
 }
 
 export async function requestCancellation(runId: string) {

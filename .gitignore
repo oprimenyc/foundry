@@ -9,6 +9,7 @@ next-env.d.ts
 # Foundry local runtime artifacts
 .foundry-data/
 .foundry-test-data/
+.foundry-proof/
 *.err.log
 *.out.log
 .smoke-server.log

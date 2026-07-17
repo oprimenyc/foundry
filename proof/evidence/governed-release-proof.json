@@ -1,0 +1,124 @@
+{
+  "proof": "foundry-governed-release@1",
+  "envelopeId": "env_proof_1",
+  "runId": "run_88084a42-c390-41f5-b143-130b201e638d",
+  "steps": [
+    {
+      "step": "1. envelope accepted",
+      "status": "PASS",
+      "detail": "decision=ACCEPTED_WITH_GATES, gates=1"
+    },
+    {
+      "step": "2. policy evaluated (pre-exec)",
+      "status": "PASS",
+      "detail": "outcome=PROMOTION_BLOCKED"
+    },
+    {
+      "step": "3. plan validated",
+      "status": "PASS",
+      "detail": "errors=none"
+    },
+    {
+      "step": "4. human gate raised, run paused",
+      "status": "PASS",
+      "detail": "gate=gate_20cf2cbf-eabc-4bc3-9f1a-3c0e774f2cfe step=repo"
+    },
+    {
+      "step": "5. operation executed to completion",
+      "status": "PASS",
+      "detail": "status=completed, refs=repoUrl,hostingProjectId,deploymentUrl,deploymentId"
+    },
+    {
+      "step": "6. artifacts retained + verified",
+      "status": "PASS",
+      "detail": "count=2, classes=RELEASE,AUDIT"
+    },
+    {
+      "step": "7. independent verification",
+      "status": "PASS",
+      "detail": "targets=2"
+    },
+    {
+      "step": "8. signed evidence manifest",
+      "status": "PASS",
+      "detail": "alg=HMAC-SHA256, items=7"
+    },
+    {
+      "step": "9. promotion decision recorded",
+      "status": "PASS",
+      "detail": "outcome=PROMOTION_ALLOWED"
+    },
+    {
+      "step": "10. rollback executed",
+      "status": "PASS",
+      "detail": "status=rolled_back, rollback=completed"
+    },
+    {
+      "step": "11. restart reconciliation safe",
+      "status": "PASS",
+      "detail": "terminal state preserved: rolled_back"
+    }
+  ],
+  "routing": [
+    {
+      "provider": "github",
+      "action": "create_repository",
+      "mode": "API",
+      "executable": true
+    },
+    {
+      "provider": "github",
+      "action": "verify_repository",
+      "mode": "API",
+      "executable": true
+    },
+    {
+      "provider": "vercel",
+      "action": "create_project",
+      "mode": "API",
+      "executable": true
+    },
+    {
+      "provider": "vercel",
+      "action": "trigger_deployment",
+      "mode": "API",
+      "executable": true
+    },
+    {
+      "provider": "vercel",
+      "action": "verify_deployment",
+      "mode": "API",
+      "executable": true
+    }
+  ],
+  "gate": {
+    "id": "gate_20cf2cbf-eabc-4bc3-9f1a-3c0e774f2cfe",
+    "decidedApproved": true
+  },
+  "artifacts": [
+    {
+      "id": "art_6df1c0243f2e4e948d400cbd",
+      "kind": "release_plan",
+      "retentionClass": "RELEASE",
+      "checksum": "6df1c0243f2e4e948d400cbd09a15447420a8b0b0bc62b0615aea7786df12910"
+    },
+    {
+      "id": "art_93aab67d7e0b5d81db6020c9",
+      "kind": "evidence_manifest",
+      "retentionClass": "AUDIT",
+      "checksum": "93aab67d7e0b5d81db6020c9d7bf645f89fe78171d8912d46318ade58bb9807b"
+    }
+  ],
+  "promotion": {
+    "outcome": "PROMOTION_ALLOWED",
+    "requiredApprovals": 0,
+    "blockingReasons": [],
+    "warnings": [],
+    "reasons": [
+      "all required gates passed"
+    ],
+    "policyVersion": "foundry-release-policy@1"
+  },
+  "finalRunStatus": "rolled_back",
+  "productionMutated": false
+}

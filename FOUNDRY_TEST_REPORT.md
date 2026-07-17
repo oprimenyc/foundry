@@ -30,3 +30,13 @@ isolating background-run lifecycles per test in a future pass.
 
 New source files scanned for live key shapes (`sk_live`, `ghp_…`, `AKIA…`, PEM headers):
 clean. Artifact redaction verified to keep secret material off disk and out of checksums.
+
+---
+
+## Live cross-runtime amendment (2026-07-17)
+
+- `npm run typecheck` — PASS (0 errors).
+- `npm test` — **91 passed / 0 failed / 0 skipped** (~65s).
+- `npm run build` — PASS (exit 0).
+- Live runtime smoke: `GET /api/healthz` 200; real create→plan(draftPlan)→run→RSA-PSS signed manifest observed.
+- Cross-runtime: VERIDIAN `/api/factory/live-mission` → E.V.E. independent **PASS** over Foundry's RSA-PSS signed evidence; tamper/wrong-key/unknown-signer/replay rejected; Foundry-unavailable → 503 fail-closed. See VERIDIAN `FACTORY_RUNTIME_PROOF.md`.

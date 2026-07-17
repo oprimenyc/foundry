@@ -26,3 +26,21 @@ Runtime is the proof. Commands run this mission, with results:
 ## Machine-readable evidence
 
 `proof/evidence/governed-release-proof.json`.
+
+---
+
+## Live cross-runtime proof (2026-07-17 amendment)
+
+Observed against the live Foundry service (`http://127.0.0.1:4319`, and `:4322` under the one-command harness):
+
+| Surface | Result |
+|---|---|
+| `GET /api/healthz` | 200 `{status:ok, persistence:file, production_safe_persistence:true, auth:open-dev}` |
+| `POST /api/projects` → `/plan` (draftPlan) → `/runs` | real project/validated-plan/executing run (no AI planner) |
+| `GET /api/projects/[id]/runs/[runId]` | `run.status=completed`; `evidenceManifests[0]` = **RSASSA-PSS-SHA256**, signer `foundry-eve-proof-rsa` v1, real `manifestHash` + `rsa-pss-sha256:` signature |
+| VERIDIAN `/api/factory/live-mission` | E.V.E. independent verdict **PASS** over the signed evidence |
+| Foundry stopped → VERIDIAN live-mission | 503 `FOUNDRY_UNAVAILABLE` (`fetch failed`) — fail closed |
+
+Cross-runtime artifacts live in the VERIDIAN repo: `artifacts/factory-proof/<UTC>-<nonce>/`
+and `artifacts/eve-proofs/live-mission.json`. See `FOUNDRY_MISSION_EXECUTION.md`,
+`FOUNDRY_SIGNING_AUTHORITY.md`, and VERIDIAN `FACTORY_RUNTIME_PROOF.md`.

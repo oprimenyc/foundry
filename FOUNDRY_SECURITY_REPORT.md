@@ -31,3 +31,19 @@
 ## Not performed
 
 No production mutation, no credential entry, no external publish, no cross-repo writes.
+
+---
+
+## E.V.E. cross-runtime signing scope (2026-07-17 amendment)
+
+| Control | Status | Evidence |
+|---|---|---|
+| RSA-PSS private-key storage | PASS | Key under `.secrets/` only; `.gitignore` excludes `.secrets/`, `*.pem`, `*.key`; never printed (fingerprint only). |
+| Public-key trust boundary | PASS | E.V.E. receives only the public key; private key never leaves Foundry. |
+| Algorithm confusion | PASS | E.V.E. verifies strictly by `signatureAlgorithm`; unsupported → BLOCKED, never HMAC-downgraded. |
+| Unknown signer / tamper / replay | PASS | Proven against a real Foundry manifest: UNKNOWN_SIGNER / CHECKSUM_MISMATCH / REPLAYED. |
+| Secret redaction in launch scripts | PASS | `start-foundry-local.ps1` prints fingerprint + status only. |
+
+Foundry cannot self-certify: E.V.E. (a separate runtime) independently re-derives the
+manifest hash and verifies the RSA-PSS signature with the trusted public key. See the
+VERIDIAN repo `LIVE_FACTORY_INTEGRATION.md` and `FACTORY_RUNTIME_PROOF.md`.

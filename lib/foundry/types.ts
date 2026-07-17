@@ -1,6 +1,7 @@
 export type RunStatus =
   | "queued"
   | "running"
+  | "awaiting_approval"
   | "completed"
   | "failed"
   | "cancelled"
@@ -203,6 +204,100 @@ export interface VerificationRecord {
   verifierVersion: string;
 }
 
+export type OperationalIncidentSeverity = "low" | "medium" | "high" | "critical";
+export type OperationalIncidentStatus = "open" | "monitoring" | "resolved";
+
+export interface OperationalIncidentRecord {
+  id: string;
+  scope: "provider" | "credential" | "deployment" | "service" | "environment" | "dependency";
+  status: OperationalIncidentStatus;
+  severity: OperationalIncidentSeverity;
+  summary: string;
+  providerId?: string;
+  credentialReferenceId?: string;
+  projectIds: string[];
+  dependencies: string[];
+  impact: string;
+  recommendedActions: string[];
+  rollbackPlan: string[];
+  evidence: Array<{ key: string; value: string }>;
+  source: "manual" | "derived";
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt?: string;
+}
+
+export interface OperationEvidenceRecord {
+  id: string;
+  operation: string;
+  actor: string;
+  scope: "provider" | "credential" | "incident" | "dependency" | "environment" | "approval" | "rollback" | "runtime";
+  status: "passed" | "failed" | "warning" | "info";
+  timestamp: string;
+  inputs: Record<string, string>;
+  outputs: Record<string, string>;
+  verification: string[];
+  runtimeProof: string[];
+  residualRisk: string[];
+  relatedRunId?: string;
+  relatedIncidentId?: string;
+}
+
+/**
+ * Retention class governs how long a retained artifact is kept and whether it
+ * is immutable. RELEASE/AUDIT/LEGAL_HOLD artifacts are immutable by construction.
+ */
+export type RetentionClass = "EPHEMERAL" | "STANDARD" | "RELEASE" | "AUDIT" | "LEGAL_HOLD";
+
+export interface ArtifactRecord {
+  /** Deterministic, content-addressed: `art_<sha256-prefix>`. */
+  id: string;
+  runId?: string;
+  projectId?: string;
+  envelopeId?: string;
+  /** e.g. execution_envelope | plan | provider_response | evidence | rollback | log. */
+  kind: string;
+  contentType: string;
+  /** sha256 hex of the stored (already-redacted) content. */
+  checksum: string;
+  sizeBytes: number;
+  /** Storage adapter URI, e.g. file://.foundry-data/artifacts/<sha>.json */
+  storageUri: string;
+  retentionClass: RetentionClass;
+  immutable: boolean;
+  redacted: boolean;
+  provenance: { producer: string; source: string; createdFrom?: string };
+  createdAt: string;
+  /** Absent for AUDIT/LEGAL_HOLD (kept indefinitely). */
+  expiresAt?: string;
+}
+
+export type ApprovalGateStatus = "pending" | "approved" | "rejected" | "expired" | "deferred";
+
+/**
+ * A persisted human gate. Unlike the in-memory vault approvals, this survives
+ * restart so a paused run can resume at the exact step after a human decides.
+ */
+export interface ApprovalGateRecord {
+  id: string;
+  runId: string;
+  projectId: string;
+  planStepId: string;
+  provider: ProviderKind;
+  action: ProviderAction;
+  riskLevel: "low" | "moderate" | "high" | "critical";
+  /** Why a human is required (fail-closed, human-readable, secret-free). */
+  reason: string;
+  /** What the human must do before approving. */
+  requiredAction: string;
+  status: ApprovalGateStatus;
+  createdAt: string;
+  expiresAt: string;
+  decidedBy?: string;
+  decidedAt?: string;
+  note?: string;
+}
+
 export interface FoundryStore {
   projects: ProjectRecord[];
   plans: DeploymentPlanRecord[];
@@ -214,4 +309,8 @@ export interface FoundryStore {
   evidence: LaunchEvidenceRecord[];
   evidenceManifests: SignedEvidenceManifestRecord[];
   verifications: VerificationRecord[];
+  incidents: OperationalIncidentRecord[];
+  operations: OperationEvidenceRecord[];
+  artifacts: ArtifactRecord[];
+  approvalGates: ApprovalGateRecord[];
 }

@@ -3,12 +3,16 @@ import { mkdirSync } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import {
+  type ApprovalGateRecord,
+  type ArtifactRecord,
   type DeploymentPlanRecord,
   type DeploymentRunRecord,
   type DeploymentStepRecord,
   type ExecutionEventRecord,
   type FoundryStore,
   type LaunchEvidenceRecord,
+  type OperationEvidenceRecord,
+  type OperationalIncidentRecord,
   type ProjectRecord,
   type ProviderCredentialReferenceRecord,
   type RollbackActionRecord,
@@ -26,6 +30,10 @@ const DEFAULT_STORE: FoundryStore = {
   evidence: [],
   evidenceManifests: [],
   verifications: [],
+  incidents: [],
+  operations: [],
+  artifacts: [],
+  approvalGates: [],
 };
 
 /** Backward compatibility: stores persisted before a collection existed gain it as empty. */
@@ -265,13 +273,37 @@ export function createEvidenceRecord(input: Omit<LaunchEvidenceRecord, "id" | "c
   const now = new Date().toISOString();
   return { ...input, id: newId("evidence"), createdAt: now, verifiedAt: now };
 }
+
 export function createEvidenceManifestRecord(input: Omit<SignedEvidenceManifestRecord, "id">): SignedEvidenceManifestRecord {
   return { ...input, id: newId("manifest") };
 }
-
 
 export function createCredentialRecord(
   input: Omit<ProviderCredentialReferenceRecord, "id" | "createdAt">
 ): ProviderCredentialReferenceRecord {
   return { ...input, id: newId("cred"), createdAt: new Date().toISOString() };
+}
+
+export function createOperationalIncidentRecord(
+  input: Omit<OperationalIncidentRecord, "id" | "createdAt" | "updatedAt">
+): OperationalIncidentRecord {
+  const now = new Date().toISOString();
+  return { ...input, id: newId("incident"), createdAt: now, updatedAt: now };
+}
+
+export function createOperationEvidenceRecord(
+  input: Omit<OperationEvidenceRecord, "id" | "timestamp">
+): OperationEvidenceRecord {
+  return { ...input, id: newId("op"), timestamp: new Date().toISOString() };
+}
+
+export function createApprovalGateRecord(
+  input: Omit<ApprovalGateRecord, "id" | "createdAt">
+): ApprovalGateRecord {
+  return { ...input, id: newId("gate"), createdAt: new Date().toISOString() };
+}
+
+/** Content-addressed artifact id: same content ⇒ same id (deterministic). */
+export function createArtifactRecord(input: Omit<ArtifactRecord, "id">): ArtifactRecord {
+  return { ...input, id: `art_${input.checksum.slice(0, 24)}` };
 }

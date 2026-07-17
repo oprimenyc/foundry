@@ -13,3 +13,8 @@ next-env.d.ts
 *.err.log
 *.out.log
 .smoke-server.log
+
+# Local signing material — private keys never enter git
+.secrets/
+*.pem
+*.key

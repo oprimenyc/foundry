@@ -20,7 +20,8 @@
     "proof:secret-remediation": "node --import tsx scripts/secret-remediation-proof.ts",
     "proof:local-execution": "node --import tsx scripts/local-execution-proof.ts",
     "proof:dyln-governance-binding": "node --import tsx scripts/dyln-email-governance-binding-proof.ts",
-    "proof:provider-actions": "node --import tsx scripts/provider-action-adapter-proof.ts"
+    "proof:provider-actions": "node --import tsx scripts/provider-action-adapter-proof.ts",
+    "proof:amos-youtube-bridge": "node --import tsx scripts/amos-youtube-bridge-proof.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.57.0",

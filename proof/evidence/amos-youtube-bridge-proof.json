@@ -1,0 +1,209 @@
+{
+  "proof": "foundry-amos-youtube-bridge@1",
+  "generatedAt": "2026-07-21T13:01:05.380Z",
+  "amosMutated": false,
+  "liveYoutubeUploadMade": false,
+  "googleApiCalled": false,
+  "oauthMutated": false,
+  "providerMutated": false,
+  "steps": [
+    {
+      "step": "1. AMOS repo path/HEAD/branch captured read-only",
+      "status": "PASS",
+      "detail": "path=C:\\Users\\jp718\\OneDrive\\Desktop\\_SORTED\\Active_Projects\\AMOS-CANONICAL, head=1ae12cf3ec7204c0a593b363ece7e5f23c60620e, branch=integration/amos-zai-canonicalization"
+    },
+    {
+      "step": "2. AMOS HEAD is at or matches the expected YouTube package commit",
+      "status": "PASS",
+      "detail": "expected=1ae12cf3ec7204c0a593b363ece7e5f23c60620e, actual=1ae12cf3ec7204c0a593b363ece7e5f23c60620e"
+    },
+    {
+      "step": "3. Foundry evidence package built from AMOS's committed proof",
+      "status": "PASS",
+      "detail": "evidenceId=art_eafca8497869a26a242c8f0c, verdict=PASS"
+    },
+    {
+      "step": "4. all required capability coverage fields are present",
+      "status": "PASS",
+      "detail": "covered=17"
+    },
+    {
+      "step": "5. no rejection findings (no live upload, no Google API call, no OAuth/provider mutation, no raw secrets)",
+      "status": "PASS",
+      "detail": "clean"
+    },
+    {
+      "step": "6. final verdict is PASS",
+      "status": "PASS",
+      "detail": "verdict=PASS"
+    },
+    {
+      "step": "7. all live-provider/mutation flags are false",
+      "status": "PASS",
+      "detail": "liveYoutubeUploadFlag=false, googleApiCalledFlag=false, oauthMutatedFlag=false, providerMutatedFlag=false, productMutatedFlag=false"
+    },
+    {
+      "step": "8. operator report reflects the evidence verdict and safety flags",
+      "status": "PASS",
+      "detail": "status=PASS"
+    },
+    {
+      "step": "9. AMOS repo HEAD unchanged after this proof ran",
+      "status": "PASS",
+      "detail": "before=1ae12cf3ec7204c0a593b363ece7e5f23c60620e, after=1ae12cf3ec7204c0a593b363ece7e5f23c60620e"
+    }
+  ],
+  "amosRepoHead": "1ae12cf3ec7204c0a593b363ece7e5f23c60620e",
+  "amosRepoBranch": "integration/amos-zai-canonicalization",
+  "finalVerdict": "PASS",
+  "evidence": {
+    "productId": "amos",
+    "productName": "AMOS",
+    "productRepoPath": "C:\\Users\\jp718\\OneDrive\\Desktop\\_SORTED\\Active_Projects\\AMOS-CANONICAL",
+    "productHead": "1ae12cf3ec7204c0a593b363ece7e5f23c60620e",
+    "productBranch": "integration/amos-zai-canonicalization",
+    "contentProviderClassification": "youtube_video_publishing",
+    "capabilityCoverage": [
+      {
+        "code": "PACKAGE_CONTRACT_EXISTS",
+        "label": "Package contract exists (schema amos.youtube-ready-package)",
+        "present": true
+      },
+      {
+        "code": "VIDEO_ASSET_REF_CHECKSUM",
+        "label": "Video asset ref/checksum included",
+        "present": true
+      },
+      {
+        "code": "THUMBNAIL_ASSET_REF_CHECKSUM",
+        "label": "Thumbnail asset ref/checksum included",
+        "present": true
+      },
+      {
+        "code": "TITLE_INCLUDED",
+        "label": "Title included",
+        "present": true
+      },
+      {
+        "code": "DESCRIPTION_INCLUDED",
+        "label": "Description included",
+        "present": true
+      },
+      {
+        "code": "TAGS_HASHTAGS_INCLUDED",
+        "label": "Tags/hashtags included",
+        "present": true
+      },
+      {
+        "code": "CHAPTERS_TIMESTAMPS_SUPPORTED",
+        "label": "Chapters/timestamps supported or documented",
+        "present": true
+      },
+      {
+        "code": "PINNED_COMMENT_SUPPORTED",
+        "label": "Pinned comment supported or documented",
+        "present": true
+      },
+      {
+        "code": "PLAYLIST_RECOMMENDATION_SUPPORTED",
+        "label": "Playlist recommendation supported or documented",
+        "present": true
+      },
+      {
+        "code": "SCHEDULE_RECOMMENDATION_INCLUDED",
+        "label": "Schedule recommendation included",
+        "present": true
+      },
+      {
+        "code": "APPROVAL_STATE_INCLUDED",
+        "label": "Approval state included",
+        "present": true
+      },
+      {
+        "code": "DRY_RUN_PUBLISH_VERDICT_INCLUDED",
+        "label": "Dry-run publish verdict included",
+        "present": true
+      },
+      {
+        "code": "LIVE_UPLOAD_BLOCKED_WITHOUT_APPROVAL",
+        "label": "Live upload blocked without explicit approval",
+        "present": true
+      },
+      {
+        "code": "GOOGLE_API_CALLS_DISABLED",
+        "label": "Google API calls disabled in proof",
+        "present": true
+      },
+      {
+        "code": "OAUTH_MUTATION_DISABLED",
+        "label": "OAuth mutation disabled in proof",
+        "present": true
+      },
+      {
+        "code": "PROVIDER_MUTATION_DISABLED",
+        "label": "Provider mutation disabled in proof",
+        "present": true
+      },
+      {
+        "code": "EVIDENCE_REFS_INCLUDED",
+        "label": "Evidence refs included",
+        "present": true
+      }
+    ],
+    "packageContractProofRef": "backend/src/amos/campaign/contracts.py:540-746 (YouTubeReadyPackage)",
+    "packageBuilderProofRef": "backend/src/amos/campaign/youtube_package.py (build_youtube_ready_package)",
+    "dryRunAdapterProofRef": "backend/src/amos/campaign/youtube_publish_adapter.py (scan_text_fields)",
+    "operatorSurfaceProofRef": "backend/src/amos/routes/campaigns.py:131-147 (GET /campaigns/{id}/youtube-package)",
+    "testProofRefs": [
+      "backend/tests/test_youtube_package.py",
+      "full backend suite: 309 passed, 10 skipped"
+    ],
+    "commandEvidenceRefs": [
+      "PYTHONPATH=src python -m pytest tests/test_youtube_package.py -q",
+      "PYTHONPATH=src python -m pytest -q",
+      "python scripts/campaign_e2e.py"
+    ],
+    "generatedPackageRef": {
+      "path": "proofs/youtube-package/youtube-package.json",
+      "sha256": "c57ce9d75e9ce73f69594c7eff3cd42ae6ee85f9cdfa3c186f454187b75877ea"
+    },
+    "approvalGateState": {
+      "required": true,
+      "approved": false
+    },
+    "liveYoutubeUploadFlag": false,
+    "googleApiCalledFlag": false,
+    "oauthMutatedFlag": false,
+    "providerMutatedFlag": false,
+    "productMutatedFlag": false,
+    "rejectionFindings": [],
+    "verdict": "PASS",
+    "generatedAt": "2026-07-21T13:01:05.257Z",
+    "evidenceId": "art_eafca8497869a26a242c8f0c"
+  },
+  "operatorReport": {
+    "generatedAt": "2026-07-21T13:01:05.325Z",
+    "product": "amos",
+    "contentProviderDomain": "youtube_video_publishing",
+    "youtubePackageStatus": "PASS",
+    "packageContractCoverage": {
+      "total": 17,
+      "present": 17,
+      "missing": []
+    },
+    "dryRunPublishVerdict": "backend/tests/test_youtube_package.py",
+    "foundryEvidenceVerdict": "PASS",
+    "eveVerificationVerdict": "NOT_RUN_FROM_FOUNDRY",
+    "blockerWarningSummary": [],
+    "liveYoutubeUploadFlag": false,
+    "googleApiCalledFlag": false,
+    "oauthMutatedFlag": false,
+    "providerMutatedFlag": false,
+    "evidenceRefs": [
+      "art_9e27aae7bfa5012011642583"
+    ],
+    "remainingOwnerActions": [
+      "A human must review and decide the approval gate before any live publish is considered — this bridge performs no live action regardless."
+    ]
+  }
+}

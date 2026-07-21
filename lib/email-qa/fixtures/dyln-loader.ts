@@ -5,7 +5,7 @@ import { sha256Canonical } from "@/lib/foundry/evidence-manifest";
 import { runEmailQaAndProduceEvidence } from "../evidence";
 import { LocalFixtureAdapter } from "../adapters/local-fixture.adapter";
 import type { EmailQaOutboundAdapter } from "../adapters/types";
-import type { EmailPayload, EmailQaEvidencePackage, RecipientType } from "../types";
+import type { EmailPayload, EmailQaEvidencePackage, EmailQaVerdict, RecipientType, ValidationIssue } from "../types";
 import { DYLN_EMAIL_CONFIG } from "./dyln.config";
 
 /**
@@ -241,11 +241,45 @@ export interface DylnFixtureEvidenceRef {
   functionName: string;
   module: string;
   fixtureHash: string;
+  productConfigHash: string;
   verdict: EmailQaEvidencePackage["verdict"];
   evidenceId: string;
   inboxMessageId: string;
   renderedPayloadHash: string;
+  senderValidation: { ok: boolean; issues: ValidationIssue[] };
+  replyToValidation: { ok: boolean; issues: ValidationIssue[] };
+  placeholderCheck: { ok: boolean; unresolved: string[] };
+  linkCheck: { ok: boolean; missing: string[] };
+  assetCheck: { ok: boolean; missing: string[] };
   providerCallMade: boolean;
+  /** true = this fixture's recipient address is NOT a confirmed non-production test address (a risk); always false for every real dyln fixture, which all use @dyln.test. */
+  productionRecipient: boolean;
+  /**
+   * Captured content (not just a hash) — carried through so an independent
+   * downstream verifier (e.g. VERIDIAN's E.V.E.) can re-run its own checks
+   * against the actual rendered output instead of trusting this package's
+   * own ok/issues conclusions. All synthetic QA content, never real customer
+   * data (see mapDylnFixtureToPayload).
+   */
+  capturedSenderIdentity: string;
+  capturedFromAddress: string;
+  capturedReplyToAddress?: string;
+  capturedSubject: string;
+  capturedRenderedBody: string;
+  capturedTemplateVariables: Record<string, string>;
+  capturedRequiredLinks: string[];
+  capturedRequiredAssets: string[];
+  /**
+   * Hashes committed by Foundry at evidence-creation time, over exactly the
+   * `capturedSubject`/`capturedRenderedBody` strings above (same
+   * "sha256:<hex>" form as sha256Canonical). A downstream independent
+   * verifier that recomputes these from the captured content and compares
+   * against these pre-committed values gets real tamper evidence — not a
+   * self-referential check, since the hash is fixed before the content ever
+   * leaves Foundry.
+   */
+  capturedSubjectHash: string;
+  capturedRenderedBodyHash: string;
 }
 
 export interface DylnIntegrationEvidence {
@@ -253,8 +287,24 @@ export interface DylnIntegrationEvidence {
   dylnRepoHead: string;
   dylnRepoBranch: string;
   fixturesDir: string;
+  productConfigHash: string;
   generatedAt: string;
   fixtures: DylnFixtureEvidenceRef[];
+  /** Worst-of aggregate across every fixture's verdict — see aggregateEmailQaVerdicts. */
+  finalVerdict: EmailQaVerdict;
+}
+
+/** true when `address` is NOT a confirmed non-production test address (Foundry only ever sends to @dyln.test). */
+export function isProductionRecipient(address: string): boolean {
+  return !address.toLowerCase().endsWith("@dyln.test");
+}
+
+const VERDICT_SEVERITY: Record<EmailQaVerdict, number> = { PASS: 0, PASS_WITH_WARNINGS: 1, FAIL: 2, BLOCKED: 3 };
+
+/** Worst-of aggregation across every fixture's verdict — one BLOCKED or FAIL anywhere caps the whole integration. */
+export function aggregateEmailQaVerdicts(verdicts: EmailQaVerdict[]): EmailQaVerdict {
+  if (verdicts.length === 0) return "BLOCKED";
+  return verdicts.reduce((worst, v) => (VERDICT_SEVERITY[v] > VERDICT_SEVERITY[worst] ? v : worst));
 }
 
 export interface RunDylnEmailQaIntegrationOptions {
@@ -285,11 +335,33 @@ export async function runDylnEmailQaIntegration(options: RunDylnEmailQaIntegrati
       functionName: fixture.functionName,
       module: fixture.module,
       fixtureHash: sha256Canonical(fixture),
+      productConfigHash: evidence.productConfigHash,
       verdict: evidence.verdict,
       evidenceId: evidence.evidenceId,
       inboxMessageId: evidence.inboxMessageId,
       renderedPayloadHash: evidence.renderedPayloadHash,
+      senderValidation: evidence.senderValidation,
+      replyToValidation: evidence.replyToValidation,
+      placeholderCheck: evidence.placeholderCheck,
+      linkCheck: evidence.linkCheck,
+      assetCheck: evidence.assetCheck,
       providerCallMade: evidence.deliveryCorrelation ? !evidence.deliveryCorrelation.simulated : false,
+      productionRecipient: isProductionRecipient(payload.recipient.address),
+      capturedSenderIdentity: payload.fromName ?? payload.from,
+      capturedFromAddress: payload.from,
+      // The *effective* reply-to a recipient would observe, whether set via an explicit header
+      // (replyToExplicit=true) or by ordinary mail-transport default-to-From behavior
+      // (replyToExplicit=false) — dyln's fixture always declares this expectation either way;
+      // Foundry's own EmailPayload.replyTo (undefined when not explicit) answers a narrower
+      // "was a header explicitly set" question and is left untouched for Foundry's own checks.
+      capturedReplyToAddress: fixture.replyToExpected,
+      capturedSubject: payload.subject,
+      capturedRenderedBody: payload.renderedBody,
+      capturedTemplateVariables: Object.fromEntries(Object.entries(payload.templateInputs).map(([k, v]) => [k, String(v)])),
+      capturedRequiredLinks: payload.requiredLinks,
+      capturedRequiredAssets: payload.requiredAssets,
+      capturedSubjectHash: sha256Canonical(payload.subject),
+      capturedRenderedBodyHash: sha256Canonical(payload.renderedBody),
     });
   }
 
@@ -298,7 +370,9 @@ export async function runDylnEmailQaIntegration(options: RunDylnEmailQaIntegrati
     dylnRepoHead: repo.head,
     dylnRepoBranch: repo.branch,
     fixturesDir,
+    productConfigHash: sha256Canonical(DYLN_EMAIL_CONFIG),
     generatedAt: new Date().toISOString(),
     fixtures: refs,
+    finalVerdict: aggregateEmailQaVerdicts(refs.map((r) => r.verdict)),
   };
 }

@@ -1,0 +1,24 @@
+{
+  "missionId": "mission-dyln-governance-bridge",
+  "productTarget": "foundry",
+  "repoTarget": "C:\\Users\\jp718\\foundry",
+  "adapterType": "ollama",
+  "runtime": "llama3:8b-instruct-q4_0 (CPU-only)",
+  "criticality": "standard",
+  "allowedFileScope": ["lib/local-execution", "proof/evidence"],
+  "filesTouched": ["proof/evidence/ollama-cpu-run-2026-07-21.json"],
+  "commandsRun": [
+    {
+      "command": "ollama run llama3:8b-instruct-q4_0 --prompt-file governance-bridge-prompt.txt",
+      "commandClass": "test_run",
+      "exitCode": 0,
+      "wallClockMs": 184320,
+      "retries": 0
+    }
+  ],
+  "cacheRefs": ["ollama-model-cache:llama3:8b-instruct-q4_0"],
+  "proofArtifacts": ["proof/evidence/ollama-cpu-run-2026-07-21.json"],
+  "providerMutationOccurred": false,
+  "sourceMutationOccurred": false,
+  "notes": "Ran fully locally against a CPU-only Ollama instance (no GPU available on this machine); completed successfully but slowly (~3m4s for one prompt)."
+}

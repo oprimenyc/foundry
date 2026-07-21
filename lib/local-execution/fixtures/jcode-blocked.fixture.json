@@ -1,0 +1,23 @@
+{
+  "missionId": "mission-dyln-governance-bridge",
+  "productTarget": "foundry",
+  "repoTarget": "C:\\Users\\jp718\\foundry",
+  "adapterType": "jcode",
+  "criticality": "standard",
+  "allowedFileScope": ["lib/local-execution"],
+  "filesTouched": [],
+  "commandsRun": [
+    {
+      "command": "jcode run --task governance-bridge-check",
+      "commandClass": "read_only",
+      "exitCode": 127,
+      "wallClockMs": 42,
+      "retries": 0
+    }
+  ],
+  "cacheRefs": [],
+  "proofArtifacts": [],
+  "providerMutationOccurred": false,
+  "sourceMutationOccurred": false,
+  "notes": "J-code CLI is not installed on this machine (exit 127: command not found). Blocked pending install; no local execution actually occurred."
+}

@@ -13,6 +13,7 @@ next-env.d.ts
 .foundry-proof-email-qa/
 .foundry-proof-dyln-email-qa/
 .foundry-proof-secret-remediation/
+.foundry-proof-local-execution/
 *.err.log
 *.out.log
 .smoke-server.log

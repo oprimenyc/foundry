@@ -163,3 +163,27 @@ test("loader parses all 17 real dyln fixture files without throwing", async () =
   assert.ok(ids.includes("follow-up-email"));
   assert.equal(new Set(ids).size, ids.length, "fixture ids must be unique");
 });
+
+test("integration evidence carries product config hash, per-check breakdowns, production-recipient confirmation, and a worst-of final verdict", async () => {
+  await resetEnv();
+  const bundle = await runDylnEmailQaIntegration({ fixturesDir: DEFAULT_DYLN_FIXTURES_DIR });
+
+  assert.ok(bundle.productConfigHash.startsWith("sha256:"));
+  // Every dyln fixture recipient is a @dyln.test placeholder — never a production address.
+  assert.ok(bundle.fixtures.every((f) => f.productionRecipient === false));
+
+  for (const f of bundle.fixtures) {
+    assert.ok(f.productConfigHash.startsWith("sha256:"), `${f.fixtureId} missing productConfigHash`);
+    assert.equal(typeof f.senderValidation.ok, "boolean", `${f.fixtureId} missing senderValidation`);
+    assert.equal(typeof f.replyToValidation.ok, "boolean", `${f.fixtureId} missing replyToValidation`);
+    assert.ok(Array.isArray(f.placeholderCheck.unresolved), `${f.fixtureId} missing placeholderCheck`);
+    assert.ok(Array.isArray(f.linkCheck.missing), `${f.fixtureId} missing linkCheck`);
+    assert.ok(Array.isArray(f.assetCheck.missing), `${f.fixtureId} missing assetCheck`);
+  }
+
+  // The known follow-up-email sender-mismatch FAIL caps the whole integration's final verdict at FAIL.
+  const followUp = bundle.fixtures.find((f) => f.fixtureId === "follow-up-email");
+  assert.equal(followUp?.verdict, "FAIL");
+  assert.equal(followUp?.senderValidation.ok, false);
+  assert.equal(bundle.finalVerdict, "FAIL");
+});

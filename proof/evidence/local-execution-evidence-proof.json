@@ -1,0 +1,125 @@
+{
+  "proof": "foundry-local-execution-evidence-adapter@1",
+  "generatedAt": "2026-07-21T09:53:18.480Z",
+  "realWorkersExecuted": false,
+  "realProviderCallsMade": false,
+  "secretValuesStored": false,
+  "steps": [
+    {
+      "step": "fixture jcode-blocked.fixture.json: status=accepted, verdict=BLOCKED",
+      "status": "PASS",
+      "detail": "got status=accepted, verdict=BLOCKED"
+    },
+    {
+      "step": "fixture wigolo-blocked.fixture.json: status=accepted, verdict=BLOCKED",
+      "status": "PASS",
+      "detail": "got status=accepted, verdict=BLOCKED"
+    },
+    {
+      "step": "fixture ollama-cpu-slow.fixture.json: status=accepted, verdict=PASS_WITH_WARNINGS",
+      "status": "PASS",
+      "detail": "got status=accepted, verdict=PASS_WITH_WARNINGS"
+    },
+    {
+      "step": "fixture primeos-tier-proof.fixture.json: status=accepted, verdict=PASS",
+      "status": "PASS",
+      "detail": "got status=accepted, verdict=PASS"
+    },
+    {
+      "step": "fixture blocked-provider-mutation.fixture.json: status=accepted, verdict=BLOCKED",
+      "status": "PASS",
+      "detail": "got status=accepted, verdict=BLOCKED"
+    },
+    {
+      "step": "fixture blocked-secret-exposure.fixture.json: status=rejected, verdict=n/a",
+      "status": "PASS",
+      "detail": "got status=rejected, verdict=n/a, reason=secret_exposure_detected"
+    },
+    {
+      "step": "no unapproved provider mutation was ever treated as authorized",
+      "status": "PASS",
+      "detail": "providerMutationTreatedAsAuthorized=false"
+    },
+    {
+      "step": "secret-exposure fixture was rejected at ingest, never turned into a reviewable evidence record",
+      "status": "PASS",
+      "detail": "status=rejected, reason=secret_exposure_detected"
+    },
+    {
+      "step": "operator report covers all 6 submissions (5 accepted + 1 rejected)",
+      "status": "PASS",
+      "detail": "total=6, accepted=5, rejected=1"
+    },
+    {
+      "step": "operator report verdict tally matches expected (3 BLOCKED, 1 PASS_WITH_WARNINGS, 1 PASS)",
+      "status": "PASS",
+      "detail": "byVerdict={\"PASS\":1,\"FAIL\":0,\"BLOCKED\":3,\"PASS_WITH_WARNINGS\":1}"
+    },
+    {
+      "step": "operator report flags the pending provider-mutation-approval escalation",
+      "status": "PASS",
+      "detail": "pendingEscalations=1"
+    },
+    {
+      "step": "every accepted record requires independent verification, never treated as final authority",
+      "status": "PASS",
+      "detail": "ok=true"
+    },
+    {
+      "step": "no raw secret material present in any retained outcome",
+      "status": "PASS",
+      "detail": "clean=true"
+    }
+  ],
+  "outcomes": [
+    {
+      "file": "jcode-blocked.fixture.json",
+      "status": "accepted",
+      "verdict": "BLOCKED",
+      "artifactId": "art_8722ba0559dc6287c961237c"
+    },
+    {
+      "file": "wigolo-blocked.fixture.json",
+      "status": "accepted",
+      "verdict": "BLOCKED",
+      "artifactId": "art_7db021e503a7096688477b11"
+    },
+    {
+      "file": "ollama-cpu-slow.fixture.json",
+      "status": "accepted",
+      "verdict": "PASS_WITH_WARNINGS",
+      "artifactId": "art_2b9875065edb076abf76157f"
+    },
+    {
+      "file": "primeos-tier-proof.fixture.json",
+      "status": "accepted",
+      "verdict": "PASS",
+      "artifactId": "art_06889af3e3c1abc24414bf97"
+    },
+    {
+      "file": "blocked-provider-mutation.fixture.json",
+      "status": "accepted",
+      "verdict": "BLOCKED",
+      "artifactId": "art_82dd6766601292099392bd6c"
+    },
+    {
+      "file": "blocked-secret-exposure.fixture.json",
+      "status": "rejected",
+      "verdict": null,
+      "artifactId": "art_2ba57d1e00eb5b3e3936b0ed",
+      "rejectionReason": "secret_exposure_detected"
+    }
+  ],
+  "operatorReportSummary": {
+    "totalSubmissions": 6,
+    "accepted": 5,
+    "rejected": 1,
+    "byVerdict": {
+      "PASS": 1,
+      "FAIL": 0,
+      "BLOCKED": 3,
+      "PASS_WITH_WARNINGS": 1
+    },
+    "pendingEscalations": 1
+  }
+}

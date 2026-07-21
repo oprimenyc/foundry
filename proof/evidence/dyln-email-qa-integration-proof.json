@@ -1,6 +1,6 @@
 {
   "proof": "foundry-dyln-email-qa-integration@1",
-  "generatedAt": "2026-07-21T04:54:04.257Z",
+  "generatedAt": "2026-07-21T09:53:19.684Z",
   "realProviderCallsMade": false,
   "dylnRepoWritten": false,
   "steps": [
@@ -58,195 +58,849 @@
     "dylnRepoHead": "9f03187b9ec5e5dbe9ba80c781a1b514db62c63b",
     "dylnRepoBranch": "feat/v1-deterministic-layer",
     "fixturesDir": "C:\\REPLIT PROJECTS\\dyln\\dyln\\server\\services\\__fixtures__\\email",
-    "generatedAt": "2026-07-21T04:54:04.256Z",
+    "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
+    "generatedAt": "2026-07-21T09:53:19.683Z",
     "fixtures": [
       {
         "fixtureId": "ai-degradation-alert",
         "functionName": "sendAiDegradationAlertEmail",
         "module": "server/services/emailService.ts",
         "fixtureHash": "sha256:c53c7403911dc14dea7e6dce76d44bb257302a53357734a1c905622404bc85fc",
+        "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_5177287b891db3c49e12489c",
-        "inboxMessageId": "art_145e0ff0537cefb5f0316af7",
+        "evidenceId": "art_5e940f41dc55bbd9953e864b",
+        "inboxMessageId": "art_892bcd5fd01cdc897f6ea75e",
         "renderedPayloadHash": "sha256:dcf3528c2719a0cad64dd1e10e9dde88c147c15cf8fc3464f1b6fdccecbdaca9",
-        "providerCallMade": false
+        "senderValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "replyToValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "placeholderCheck": {
+          "ok": true,
+          "unresolved": []
+        },
+        "linkCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "assetCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "providerCallMade": false,
+        "productionRecipient": false,
+        "capturedSenderIdentity": "support@getdyln.com",
+        "capturedFromAddress": "support@getdyln.com",
+        "capturedReplyToAddress": "support@getdyln.com",
+        "capturedSubject": "AI receptionist fallback activated",
+        "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"ai-degradation-alert\" — not dyln's live-rendered output]\nbusinessName: QA Test Business LLC\nfailureCount: 4\nhttps://app.getdyln.com/dashboard\nhttps://getdyln.com/unsubscribe\n© DYLN",
+        "capturedTemplateVariables": {
+          "businessName": "QA Test Business LLC",
+          "failureCount": "4"
+        },
+        "capturedRequiredLinks": [
+          "https://app.getdyln.com/dashboard",
+          "https://getdyln.com/unsubscribe"
+        ],
+        "capturedRequiredAssets": [],
+        "capturedSubjectHash": "sha256:69438686c86c915a82621221ecd33820b4dd1a8d9d963e286d7ab730d401e1a0",
+        "capturedRenderedBodyHash": "sha256:3145a74eee92774dc05eff14b179e7ea91bd010373b835239575e4f67f3916ba"
       },
       {
         "fixtureId": "business-credit-received",
         "functionName": "sendBusinessCreditReceivedEmail",
         "module": "server/services/emailService.ts",
         "fixtureHash": "sha256:82edd40205080fdc37c169b17d7a51a0649e6547c026c5202b19365aafbac1b9",
+        "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_91ae942a0856dd455753e9bd",
-        "inboxMessageId": "art_8a7e1ee76617f83b630bf6a7",
+        "evidenceId": "art_d6ff6fd79bf358a52c523d84",
+        "inboxMessageId": "art_cb7ec7c965afa775ed7a45e1",
         "renderedPayloadHash": "sha256:9a44072b88305be94469a90303e4e64cbecb6f0217a4f80119b1f5c42e60e7f7",
-        "providerCallMade": false
+        "senderValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "replyToValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "placeholderCheck": {
+          "ok": true,
+          "unresolved": []
+        },
+        "linkCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "assetCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "providerCallMade": false,
+        "productionRecipient": false,
+        "capturedSenderIdentity": "support@getdyln.com",
+        "capturedFromAddress": "support@getdyln.com",
+        "capturedReplyToAddress": "support@getdyln.com",
+        "capturedSubject": "Business credit application received",
+        "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"business-credit-received\" — not dyln's live-rendered output]\nfirstName: qa-synth-firstName\nhttps://app.getdyln.com/dashboard\nhttps://getdyln.com/unsubscribe\n© DYLN",
+        "capturedTemplateVariables": {
+          "firstName": "qa-synth-firstName"
+        },
+        "capturedRequiredLinks": [
+          "https://app.getdyln.com/dashboard",
+          "https://getdyln.com/unsubscribe"
+        ],
+        "capturedRequiredAssets": [],
+        "capturedSubjectHash": "sha256:49aa70e9b143892fd40e22ba8faa530936674c6b0dc7d38ea46bf43d00fe5e29",
+        "capturedRenderedBodyHash": "sha256:01b0de7452ce0ba5a5bf51fef6f0930d79273214c0cc81dcda9414760489491a"
       },
       {
         "fixtureId": "contact-sales-admin-notification",
         "functionName": "sendAdminNotification",
         "module": "server/services/emailService.ts",
         "fixtureHash": "sha256:20167a94ec5850a7edfc59300a1f60217888ff5651dc261cf44030edb32c9947",
+        "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_2cfe111d78515d36c2fa8344",
-        "inboxMessageId": "art_9a0c3993d7a5407783b78ab9",
+        "evidenceId": "art_263861550ccec8a09151e081",
+        "inboxMessageId": "art_8d4cdc85cef0570c2fb4790b",
         "renderedPayloadHash": "sha256:b2630e6b6f074595bf5aa9239267ee60bb0ad7dad10b25a4f9fb01d7b8224f40",
-        "providerCallMade": false
+        "senderValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "replyToValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "placeholderCheck": {
+          "ok": true,
+          "unresolved": []
+        },
+        "linkCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "assetCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "providerCallMade": false,
+        "productionRecipient": false,
+        "capturedSenderIdentity": "support@getdyln.com",
+        "capturedFromAddress": "support@getdyln.com",
+        "capturedReplyToAddress": "support@getdyln.com",
+        "capturedSubject": "HIGH PRIORITY New Enterprise Contact QA Fixture Enterprises",
+        "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"contact-sales-admin-notification\" — not dyln's live-rendered output]\ncompanyName: QA Fixture Enterprises\nfullName: Alex Chen\nemail: qa+enterpriselead@dyln.test\nphoneNumber: +15550100040\ncompanySize: 51-200\nmonthlyVolume: 10000+\nrequirements: Need SSO, dedicated numbers per region, and SLA-backed support.\npreferredContactMethod: email\nbestTime: afternoon\nmailto:qa+enterpriselead@dyln.test\ntel:+15550100040",
+        "capturedTemplateVariables": {
+          "companyName": "QA Fixture Enterprises",
+          "fullName": "Alex Chen",
+          "email": "qa+enterpriselead@dyln.test",
+          "phoneNumber": "+15550100040",
+          "companySize": "51-200",
+          "monthlyVolume": "10000+",
+          "requirements": "Need SSO, dedicated numbers per region, and SLA-backed support.",
+          "preferredContactMethod": "email",
+          "bestTime": "afternoon"
+        },
+        "capturedRequiredLinks": [
+          "mailto:qa+enterpriselead@dyln.test",
+          "tel:+15550100040"
+        ],
+        "capturedRequiredAssets": [],
+        "capturedSubjectHash": "sha256:5ea6d7adcca53759c1b3aca07b5b9b35e3fe6d1d1ee18a978be4535133e88ea7",
+        "capturedRenderedBodyHash": "sha256:95a15da89dc16d1f3fdaab0920bd8050733fe34f9511a5905b9f0c8893208f3a"
       },
       {
         "fixtureId": "contact-sales-customer-autoreply",
         "functionName": "sendCustomerAutoReply",
         "module": "server/services/emailService.ts",
         "fixtureHash": "sha256:525f9ae99145fdb45fbbc87d2ffaa70237f91391b5bd3088b4301b201cc09f58",
+        "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_cac67888b78656dbede9f5eb",
-        "inboxMessageId": "art_8109bba6cdfaa46c69680776",
+        "evidenceId": "art_8222f3701eabf39256381d7c",
+        "inboxMessageId": "art_f0a7d15f90340e3b4622651f",
         "renderedPayloadHash": "sha256:10f0a5299217991b2453d020f5f50efe98e6658b71c208b9d47c0fde611d3532",
-        "providerCallMade": false
+        "senderValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "replyToValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "placeholderCheck": {
+          "ok": true,
+          "unresolved": []
+        },
+        "linkCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "assetCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "providerCallMade": false,
+        "productionRecipient": false,
+        "capturedSenderIdentity": "support@getdyln.com",
+        "capturedFromAddress": "support@getdyln.com",
+        "capturedReplyToAddress": "support@getdyln.com",
+        "capturedSubject": "Thanks for contacting DYLN",
+        "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"contact-sales-customer-autoreply\" — not dyln's live-rendered output]\nfirstName: qa-synth-firstName\ncompanyName: QA Fixture Enterprises\ncontactMethodText: qa-synth-contactMethodText\ntimeFrameText: qa-synth-timeFrameText\nhttps://getdyln.com/support",
+        "capturedTemplateVariables": {
+          "firstName": "qa-synth-firstName",
+          "companyName": "QA Fixture Enterprises",
+          "contactMethodText": "qa-synth-contactMethodText",
+          "timeFrameText": "qa-synth-timeFrameText"
+        },
+        "capturedRequiredLinks": [
+          "https://getdyln.com/support"
+        ],
+        "capturedRequiredAssets": [],
+        "capturedSubjectHash": "sha256:16305f82af1328e337cec8828206af4a47663b80773a04893e2d79202d375702",
+        "capturedRenderedBodyHash": "sha256:6aa38b843444075aae7ef9955e3e5b0587c45438be177f15e940cca7c14e7a8e"
       },
       {
         "fixtureId": "follow-up-email",
         "functionName": "sendFollowUpEmail",
         "module": "server/services/emailFollowUpService.ts",
         "fixtureHash": "sha256:f5f58f9d27856dfd1085e7b743778c0e92fcebc3743c7c547c49644f4b4d3b68",
+        "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "FAIL",
-        "evidenceId": "art_bed7111db636d46173631bc1",
-        "inboxMessageId": "art_5ee2171acc9ae999d5e0bb2f",
+        "evidenceId": "art_9771d40b07d5e9fc2022e5d8",
+        "inboxMessageId": "art_ffa90e17b616bc53de79c5b5",
         "renderedPayloadHash": "sha256:f983eba2fcf4844b6d2c087cbcbddc9e5d7fca8a291cc688914a7e03c5af4756",
-        "providerCallMade": false
+        "senderValidation": {
+          "ok": false,
+          "issues": [
+            {
+              "code": "SENDER_MISMATCH",
+              "message": "from address \"noreply@getdyln.com\" does not match declared sender \"support@getdyln.com\"",
+              "severity": "error"
+            }
+          ]
+        },
+        "replyToValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "placeholderCheck": {
+          "ok": true,
+          "unresolved": []
+        },
+        "linkCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "assetCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "providerCallMade": false,
+        "productionRecipient": false,
+        "capturedSenderIdentity": "noreply@getdyln.com",
+        "capturedFromAddress": "noreply@getdyln.com",
+        "capturedReplyToAddress": "noreply@getdyln.com",
+        "capturedSubject": "Following up on your DYLN quote",
+        "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"follow-up-email\" — not dyln's live-rendered output]\nfromName: qa-synth-fromName",
+        "capturedTemplateVariables": {
+          "fromName": "qa-synth-fromName"
+        },
+        "capturedRequiredLinks": [],
+        "capturedRequiredAssets": [],
+        "capturedSubjectHash": "sha256:d147c5b5b6b944ac1a998d03997ba243c5e389d2088c3bff39f75c0cebb05b9e",
+        "capturedRenderedBodyHash": "sha256:4440603ae7e02bf979362bbb66692225c3151ab1c5eacd2f13c67e5241d07b56"
       },
       {
         "fixtureId": "missed-call-alert",
         "functionName": "sendMissedCallAlertEmail",
         "module": "server/services/emailService.ts",
         "fixtureHash": "sha256:ce481c72d581f1bb7415a618839c989ab9483f9e811334af454e7fc1eb6deebd",
+        "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_72a4a181e5964bf678f06525",
-        "inboxMessageId": "art_562a5a95cf622df2d4ea87c7",
+        "evidenceId": "art_896bf758bf95b152369516bc",
+        "inboxMessageId": "art_bea7d04d51a99749fee58971",
         "renderedPayloadHash": "sha256:e63fedbf56812eba3bea507d244c7663c5a846bff9a6eed88344b6a57d41529f",
-        "providerCallMade": false
+        "senderValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "replyToValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "placeholderCheck": {
+          "ok": true,
+          "unresolved": []
+        },
+        "linkCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "assetCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "providerCallMade": false,
+        "productionRecipient": false,
+        "capturedSenderIdentity": "support@getdyln.com",
+        "capturedFromAddress": "support@getdyln.com",
+        "capturedReplyToAddress": "support@getdyln.com",
+        "capturedSubject": "Missed call from",
+        "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"missed-call-alert\" — not dyln's live-rendered output]\ncallerNumber: +15550100030\ntimeStr: qa-synth-timeStr\nhttps://app.getdyln.com/operations-feed\nhttps://app.getdyln.com/ai-settings\nhttps://getdyln.com/unsubscribe\n© DYLN",
+        "capturedTemplateVariables": {
+          "callerNumber": "+15550100030",
+          "timeStr": "qa-synth-timeStr"
+        },
+        "capturedRequiredLinks": [
+          "https://app.getdyln.com/operations-feed",
+          "https://app.getdyln.com/ai-settings",
+          "https://getdyln.com/unsubscribe"
+        ],
+        "capturedRequiredAssets": [],
+        "capturedSubjectHash": "sha256:e387231f6731f9d118aebba60ff828da32fb29c4fbef759ec87187c3fc772a9b",
+        "capturedRenderedBodyHash": "sha256:5d995baca92df1b51030730a6af4b1a63836bb057db7491d743c1080982047ea"
       },
       {
         "fixtureId": "onboarding-day1",
         "functionName": "sendOnboardingDay1Email",
         "module": "server/services/emailService.ts",
         "fixtureHash": "sha256:bc6f6b17c503f8c739498bbc41059741647514c498324fa6cb974bfb1de0275a",
+        "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_8822ea33771a797f3e1c9f1e",
-        "inboxMessageId": "art_be1411050aaa8d037fbe595e",
+        "evidenceId": "art_cf104236fd8f1dafcd5f6aa5",
+        "inboxMessageId": "art_23917e98c241b8d1fc4e8ca0",
         "renderedPayloadHash": "sha256:ba67334c837e093c588d3523d1aa7215aac3a9daf26af3c93b6ddffa0eb6dbd7",
-        "providerCallMade": false
+        "senderValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "replyToValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "placeholderCheck": {
+          "ok": true,
+          "unresolved": []
+        },
+        "linkCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "assetCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "providerCallMade": false,
+        "productionRecipient": false,
+        "capturedSenderIdentity": "support@getdyln.com",
+        "capturedFromAddress": "support@getdyln.com",
+        "capturedReplyToAddress": "support@getdyln.com",
+        "capturedSubject": "business number 2 minutes",
+        "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"onboarding-day1\" — not dyln's live-rendered output]\nfirstName: qa-synth-firstName\nhttps://app.getdyln.com/lines\nhttps://getdyln.com/unsubscribe\n© DYLN",
+        "capturedTemplateVariables": {
+          "firstName": "qa-synth-firstName"
+        },
+        "capturedRequiredLinks": [
+          "https://app.getdyln.com/lines",
+          "https://getdyln.com/unsubscribe"
+        ],
+        "capturedRequiredAssets": [],
+        "capturedSubjectHash": "sha256:26da7bc389a67ec8cdccb2634d0b5ba1690d742e51ec6d24eac83584d6341d5e",
+        "capturedRenderedBodyHash": "sha256:394a87bcd72de88eacbbe93cf7bf933d1fb58584cb78378526dd09747ebb471f"
       },
       {
         "fixtureId": "onboarding-day3",
         "functionName": "sendOnboardingDay3Email",
         "module": "server/services/emailService.ts",
         "fixtureHash": "sha256:464db57075f3b1e0f2052121bacc5812e4e3415324f0bbd32f611fb6436760f0",
+        "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_b62a6bb637f59601ae0281a3",
-        "inboxMessageId": "art_43fd3079bc4aa12c4b9789ba",
+        "evidenceId": "art_50b58e5b995b6c80162f6ee7",
+        "inboxMessageId": "art_652e42fd9054f99d9cd48dd6",
         "renderedPayloadHash": "sha256:8c3084bdb60f6bcc0c9bb27aa6843035a0c52edcbdbe441162f5587df7df8d62",
-        "providerCallMade": false
+        "senderValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "replyToValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "placeholderCheck": {
+          "ok": true,
+          "unresolved": []
+        },
+        "linkCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "assetCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "providerCallMade": false,
+        "productionRecipient": false,
+        "capturedSenderIdentity": "support@getdyln.com",
+        "capturedFromAddress": "support@getdyln.com",
+        "capturedReplyToAddress": "support@getdyln.com",
+        "capturedSubject": "DYLN features",
+        "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"onboarding-day3\" — not dyln's live-rendered output]\nfirstName: qa-synth-firstName\nhttps://app.getdyln.com/dashboard\nhttps://getdyln.com/unsubscribe\n© DYLN",
+        "capturedTemplateVariables": {
+          "firstName": "qa-synth-firstName"
+        },
+        "capturedRequiredLinks": [
+          "https://app.getdyln.com/dashboard",
+          "https://getdyln.com/unsubscribe"
+        ],
+        "capturedRequiredAssets": [],
+        "capturedSubjectHash": "sha256:24f12ddabc1eed6604a9a750d2c74f010e49fc869385612a4764a24a7cccc2c9",
+        "capturedRenderedBodyHash": "sha256:b1627bc0978975f19268280b9a8d3c2882ec7c9f55ebc9f21caacaf96d7dc01c"
       },
       {
         "fixtureId": "payment-confirmed",
         "functionName": "sendPaymentConfirmationEmail",
         "module": "server/services/emailService.ts",
         "fixtureHash": "sha256:454afab8f76f82f9f64cabf560c51892fbd0642befc819224f3eaa639172a6d6",
+        "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_8506232ffa7106748f920720",
-        "inboxMessageId": "art_d7bf592ece2e62ffe142b14c",
+        "evidenceId": "art_e51b3a171d5ab8efedfe86f3",
+        "inboxMessageId": "art_c59d55c1681ea2d606407c1d",
         "renderedPayloadHash": "sha256:6526f8543cd05afc17df53795a5c2b0d0af40129f5c310c2881166428e7cd5e2",
-        "providerCallMade": false
+        "senderValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "replyToValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "placeholderCheck": {
+          "ok": true,
+          "unresolved": []
+        },
+        "linkCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "assetCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "providerCallMade": false,
+        "productionRecipient": false,
+        "capturedSenderIdentity": "support@getdyln.com",
+        "capturedFromAddress": "support@getdyln.com",
+        "capturedReplyToAddress": "support@getdyln.com",
+        "capturedSubject": "Payment confirmed",
+        "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"payment-confirmed\" — not dyln's live-rendered output]\nfirstName: qa-synth-firstName\namount: qa-synth-amount\ndescription: DYLN Business — monthly subscription\ndateStr: qa-synth-dateStr\nhttps://app.getdyln.com/billing\nhttps://getdyln.com/unsubscribe\n© DYLN",
+        "capturedTemplateVariables": {
+          "firstName": "qa-synth-firstName",
+          "amount": "qa-synth-amount",
+          "description": "DYLN Business — monthly subscription",
+          "dateStr": "qa-synth-dateStr"
+        },
+        "capturedRequiredLinks": [
+          "https://app.getdyln.com/billing",
+          "https://getdyln.com/unsubscribe"
+        ],
+        "capturedRequiredAssets": [],
+        "capturedSubjectHash": "sha256:c8817f19c00306dc5d00987fbbcee3d96ace90bb3bd2cda2b60451ec804edb24",
+        "capturedRenderedBodyHash": "sha256:d41fa3b125c3941459c4ed5c2f74ba7b771975c1a73aea6bff55d41d47ce69d2"
       },
       {
         "fixtureId": "payment-failed",
         "functionName": "sendPaymentFailedEmail",
         "module": "server/services/emailService.ts",
         "fixtureHash": "sha256:96813c21ad2b4f2e60ba583d5275e6132249309f707e0ac9ad590bfbca0b6ea7",
+        "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_d4f0102f24648a21938c31fd",
-        "inboxMessageId": "art_baea79d0c731e1a84ab5b5ff",
+        "evidenceId": "art_84eb8a21f78ba3a898d7a7ff",
+        "inboxMessageId": "art_2eed76f3fcaacd6e3fdae520",
         "renderedPayloadHash": "sha256:d5c62d9c059de99922a8c89e37907f95366e97eeed00eb3ccb674f2e30ef0ced",
-        "providerCallMade": false
+        "senderValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "replyToValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "placeholderCheck": {
+          "ok": true,
+          "unresolved": []
+        },
+        "linkCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "assetCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "providerCallMade": false,
+        "productionRecipient": false,
+        "capturedSenderIdentity": "support@getdyln.com",
+        "capturedFromAddress": "support@getdyln.com",
+        "capturedReplyToAddress": "support@getdyln.com",
+        "capturedSubject": "payment failed",
+        "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"payment-failed\" — not dyln's live-rendered output]\nfirstName: qa-synth-firstName\namount: qa-synth-amount\nhttps://app.getdyln.com/billing\nhttps://getdyln.com/unsubscribe\n© DYLN",
+        "capturedTemplateVariables": {
+          "firstName": "qa-synth-firstName",
+          "amount": "qa-synth-amount"
+        },
+        "capturedRequiredLinks": [
+          "https://app.getdyln.com/billing",
+          "https://getdyln.com/unsubscribe"
+        ],
+        "capturedRequiredAssets": [],
+        "capturedSubjectHash": "sha256:1ef8f633efdbb1a4afbde839a77d54b8d4c1399ff655ecf174a3ff1256d86c6d",
+        "capturedRenderedBodyHash": "sha256:7013447697c7e3fcabbe1e56966429aa1b1dc621e3e4ba5cd8fe562dce00c91d"
       },
       {
         "fixtureId": "sms-activation",
         "functionName": "sendSmsActivationEmail",
         "module": "server/services/emailService.ts",
         "fixtureHash": "sha256:1c7dd4b05f21b39fa88f91dab26441cc33f9260321cc7abec5f7179125582244",
+        "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_7c43c3d45fe961c85757ddbc",
-        "inboxMessageId": "art_76944cfdc4825c6567f30191",
+        "evidenceId": "art_7ce7831d2eca1ce7a212a3ca",
+        "inboxMessageId": "art_05fe398e832617338405d469",
         "renderedPayloadHash": "sha256:1f95d5aa72d38384474e119ffb7e0d738bd86b5b5b0b6339962842a81780e9b8",
-        "providerCallMade": false
+        "senderValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "replyToValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "placeholderCheck": {
+          "ok": true,
+          "unresolved": []
+        },
+        "linkCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "assetCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "providerCallMade": false,
+        "productionRecipient": false,
+        "capturedSenderIdentity": "support@getdyln.com",
+        "capturedFromAddress": "support@getdyln.com",
+        "capturedReplyToAddress": "support@getdyln.com",
+        "capturedSubject": "SMS is active",
+        "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"sms-activation\" — not dyln's live-rendered output]\nfirstName: qa-synth-firstName\nphoneNumber: +15550100010\nhttps://app.getdyln.com/dashboard\nhttps://getdyln.com/unsubscribe\n© DYLN",
+        "capturedTemplateVariables": {
+          "firstName": "qa-synth-firstName",
+          "phoneNumber": "+15550100010"
+        },
+        "capturedRequiredLinks": [
+          "https://app.getdyln.com/dashboard",
+          "https://getdyln.com/unsubscribe"
+        ],
+        "capturedRequiredAssets": [],
+        "capturedSubjectHash": "sha256:6fabe98a57a76b5d2bdcdb384be89c975fea51f679d6624c0627c6184e37802f",
+        "capturedRenderedBodyHash": "sha256:910f427260c7ab9207208b17701114e43f6316c35f69ed304c42a516cca5cdd8"
       },
       {
         "fixtureId": "subscription-cancelled",
         "functionName": "sendSubscriptionCancelledEmail",
         "module": "server/services/emailService.ts",
         "fixtureHash": "sha256:4b42a31056c30ea0c5d2019f55db5fc1301abc1074b4467640d83fd0adfc006a",
+        "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_daccbf33f5c3bfb47c479a19",
-        "inboxMessageId": "art_80c735325f7c8bec39a23886",
+        "evidenceId": "art_a0b570ec4451a9f3a3e04793",
+        "inboxMessageId": "art_ec846f3ae1729e12de85adb2",
         "renderedPayloadHash": "sha256:068d4319276b31e5583b884b245763c25a139df200fab36e9fbe8f5775206e4b",
-        "providerCallMade": false
+        "senderValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "replyToValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "placeholderCheck": {
+          "ok": true,
+          "unresolved": []
+        },
+        "linkCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "assetCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "providerCallMade": false,
+        "productionRecipient": false,
+        "capturedSenderIdentity": "support@getdyln.com",
+        "capturedFromAddress": "support@getdyln.com",
+        "capturedReplyToAddress": "support@getdyln.com",
+        "capturedSubject": "subscription has been cancelled",
+        "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"subscription-cancelled\" — not dyln's live-rendered output]\nfirstName: qa-synth-firstName\ndateStr: qa-synth-dateStr\nhttps://app.getdyln.com/pricing\nhttps://getdyln.com/unsubscribe\n© DYLN",
+        "capturedTemplateVariables": {
+          "firstName": "qa-synth-firstName",
+          "dateStr": "qa-synth-dateStr"
+        },
+        "capturedRequiredLinks": [
+          "https://app.getdyln.com/pricing",
+          "https://getdyln.com/unsubscribe"
+        ],
+        "capturedRequiredAssets": [],
+        "capturedSubjectHash": "sha256:a943239ad9f0d414c767da4fa310d11b8fd889ac289adf642731e3edf9f3fb58",
+        "capturedRenderedBodyHash": "sha256:eb65ab98e09b126355d3853e3923a5b18c425e953bb58d50ec80eb77cd9acab3"
       },
       {
         "fixtureId": "subscription-confirmed",
         "functionName": "sendSubscriptionConfirmationEmail",
         "module": "server/services/emailService.ts",
         "fixtureHash": "sha256:6092c28671569915d651532ea17471cb8984b521cfd3afbcfe4256e2ceb924ba",
+        "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_275b1bcd486803f681a7ddea",
-        "inboxMessageId": "art_67bfc6d73b4f0fac2f4e22ec",
+        "evidenceId": "art_5d54eaf5725feae8947baedc",
+        "inboxMessageId": "art_71911d65264b874b6d849297",
         "renderedPayloadHash": "sha256:78794b115a7507b24d4e8063768dfda161db919d06a6821745f758894029278b",
-        "providerCallMade": false
+        "senderValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "replyToValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "placeholderCheck": {
+          "ok": true,
+          "unresolved": []
+        },
+        "linkCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "assetCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "providerCallMade": false,
+        "productionRecipient": false,
+        "capturedSenderIdentity": "support@getdyln.com",
+        "capturedFromAddress": "support@getdyln.com",
+        "capturedReplyToAddress": "support@getdyln.com",
+        "capturedSubject": "DYLN subscription confirmed",
+        "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"subscription-confirmed\" — not dyln's live-rendered output]\nfirstName: qa-synth-firstName\nplanLabel: qa-synth-planLabel\namountFormatted: qa-synth-amountFormatted\ncycleLabel: qa-synth-cycleLabel\nhttps://app.getdyln.com/dashboard\nhttps://getdyln.com/unsubscribe\n© DYLN",
+        "capturedTemplateVariables": {
+          "firstName": "qa-synth-firstName",
+          "planLabel": "qa-synth-planLabel",
+          "amountFormatted": "qa-synth-amountFormatted",
+          "cycleLabel": "qa-synth-cycleLabel"
+        },
+        "capturedRequiredLinks": [
+          "https://app.getdyln.com/dashboard",
+          "https://getdyln.com/unsubscribe"
+        ],
+        "capturedRequiredAssets": [],
+        "capturedSubjectHash": "sha256:64ad8d073c4e78d9fd005282f1115809c31e50ae251bacb60fcf045901c9953e",
+        "capturedRenderedBodyHash": "sha256:51b61ef4061f1e171ecc763aa5b38895c3171e894fecedc34d95e72f4ac2646b"
       },
       {
         "fixtureId": "voicemail-notification",
         "functionName": "sendVoicemailNotificationEmail",
         "module": "server/services/emailService.ts",
         "fixtureHash": "sha256:991b8a0c434299b857eda5d4a49ba1cdf0f83460286de78405a8775238b12ec9",
+        "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_4d6bb365332fbfe02cedf16a",
-        "inboxMessageId": "art_0bd2b98053e331ab96550b45",
+        "evidenceId": "art_c277c5442ef2fb102a005cf2",
+        "inboxMessageId": "art_0b0c822b1e1a2594923fcc9b",
         "renderedPayloadHash": "sha256:f048383fe838365734030a956dd051d7b89da80de983fb0618b84c88d43754cd",
-        "providerCallMade": false
+        "senderValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "replyToValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "placeholderCheck": {
+          "ok": true,
+          "unresolved": []
+        },
+        "linkCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "assetCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "providerCallMade": false,
+        "productionRecipient": false,
+        "capturedSenderIdentity": "support@getdyln.com",
+        "capturedFromAddress": "support@getdyln.com",
+        "capturedReplyToAddress": "support@getdyln.com",
+        "capturedSubject": "New voicemail from",
+        "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"voicemail-notification\" — not dyln's live-rendered output]\ncallerNumber: +15550100020\ntimeStr: qa-synth-timeStr\ndurationStr: qa-synth-durationStr\ntranscript: Hi, this is a test caller checking on my order status. Please call me back.\nhttps://app.getdyln.com/voicemails\nhttps://getdyln.com/unsubscribe\n© DYLN",
+        "capturedTemplateVariables": {
+          "callerNumber": "+15550100020",
+          "timeStr": "qa-synth-timeStr",
+          "durationStr": "qa-synth-durationStr",
+          "transcript": "Hi, this is a test caller checking on my order status. Please call me back."
+        },
+        "capturedRequiredLinks": [
+          "https://app.getdyln.com/voicemails",
+          "https://getdyln.com/unsubscribe"
+        ],
+        "capturedRequiredAssets": [],
+        "capturedSubjectHash": "sha256:5f91d89521a00e54bf26889e26ec39cfb4212eed8a1eb38863a4b627be239e28",
+        "capturedRenderedBodyHash": "sha256:3bf24f593070c2914201ca67d7b6dafe13444082d57ba4e936287b5bd285dad5"
       },
       {
         "fixtureId": "waitlist-admin-notification",
         "functionName": "sendWaitlistAdminNotification",
         "module": "server/services/emailService.ts",
         "fixtureHash": "sha256:6319c509f8ab1493ad45b0b706992de5278867d2e53d045cc8bf9897fef4b237",
+        "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_1437a94fc4fa8da3661efa72",
-        "inboxMessageId": "art_fde10b7566a173028a0ec753",
+        "evidenceId": "art_8a63a1cae8e5b2b843d867b2",
+        "inboxMessageId": "art_05ae16adc7c391cfd3e3632a",
         "renderedPayloadHash": "sha256:7e23cdff240aa5bed6e7f585c912a0614fd64050082dfde1b2f03e2102e81d3a",
-        "providerCallMade": false
+        "senderValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "replyToValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "placeholderCheck": {
+          "ok": true,
+          "unresolved": []
+        },
+        "linkCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "assetCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "providerCallMade": false,
+        "productionRecipient": false,
+        "capturedSenderIdentity": "support@getdyln.com",
+        "capturedFromAddress": "support@getdyln.com",
+        "capturedReplyToAddress": "support@getdyln.com",
+        "capturedSubject": "New waitlist signup",
+        "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"waitlist-admin-notification\" — not dyln's live-rendered output]\nemail: qa+waitlist@dyln.test",
+        "capturedTemplateVariables": {
+          "email": "qa+waitlist@dyln.test"
+        },
+        "capturedRequiredLinks": [],
+        "capturedRequiredAssets": [],
+        "capturedSubjectHash": "sha256:16537c8b149bc8dc27a7ed9cdbd6949e40c17eb0b0a6293701b5d373ce60359d",
+        "capturedRenderedBodyHash": "sha256:dca77c3e06ae0220cc8fde4b24807f9435f25eb5904bf0921d56f3b5860134ea"
       },
       {
         "fixtureId": "waitlist-confirmation",
         "functionName": "sendWaitlistConfirmationEmail",
         "module": "server/services/emailService.ts",
         "fixtureHash": "sha256:70255a8ad508ea7fdb94c4810104d74598b19709d3ddc9e6c9041981b154196a",
+        "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_5f235cc58ab55ebc7ea154d7",
-        "inboxMessageId": "art_582c723d6159bb2fc3bca5f2",
+        "evidenceId": "art_f6ac5feb9c328a60d270fc36",
+        "inboxMessageId": "art_3eaa0a1e44edb7b1b0ff0a1c",
         "renderedPayloadHash": "sha256:1f8e8c980ca42f05629cf9174f0d3f039d023244c639981201d073898b5aff8c",
-        "providerCallMade": false
+        "senderValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "replyToValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "placeholderCheck": {
+          "ok": true,
+          "unresolved": []
+        },
+        "linkCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "assetCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "providerCallMade": false,
+        "productionRecipient": false,
+        "capturedSenderIdentity": "support@getdyln.com",
+        "capturedFromAddress": "support@getdyln.com",
+        "capturedReplyToAddress": "support@getdyln.com",
+        "capturedSubject": "waitlist",
+        "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"waitlist-confirmation\" — not dyln's live-rendered output]\nhttps://getdyln.com\nhttps://getdyln.com/unsubscribe\n© DYLN",
+        "capturedTemplateVariables": {},
+        "capturedRequiredLinks": [
+          "https://getdyln.com",
+          "https://getdyln.com/unsubscribe"
+        ],
+        "capturedRequiredAssets": [],
+        "capturedSubjectHash": "sha256:acf919738dade3150d5b61bca9da1fa24d84a2c7529bf6e829af970bfdde1447",
+        "capturedRenderedBodyHash": "sha256:7f32ada85a5bc36df137c93344c005691cba4fc681c5d46ab7fb24f95ecd37cc"
       },
       {
         "fixtureId": "welcome",
         "functionName": "sendWelcomeEmail",
         "module": "server/services/emailService.ts",
         "fixtureHash": "sha256:47d5c1e96850168ae87edff13a625e0539e0a64d8017e690182cab27516d9155",
+        "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_79303d95f33363f5046ac229",
-        "inboxMessageId": "art_07dba4f2ef939d72a1096c77",
+        "evidenceId": "art_f1c006749bae94b0d8bf504d",
+        "inboxMessageId": "art_6377111321ca10ec0a347e11",
         "renderedPayloadHash": "sha256:4178bfb8eb5a9cc1ae9a6afc9d540dd5b3d96b9c12b4acd6a69a5614e3cb1ced",
-        "providerCallMade": false
+        "senderValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "replyToValidation": {
+          "ok": true,
+          "issues": []
+        },
+        "placeholderCheck": {
+          "ok": true,
+          "unresolved": []
+        },
+        "linkCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "assetCheck": {
+          "ok": true,
+          "missing": []
+        },
+        "providerCallMade": false,
+        "productionRecipient": false,
+        "capturedSenderIdentity": "support@getdyln.com",
+        "capturedFromAddress": "support@getdyln.com",
+        "capturedReplyToAddress": "support@getdyln.com",
+        "capturedSubject": "Welcome to DYLN",
+        "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"welcome\" — not dyln's live-rendered output]\nfirstName: qa-synth-firstName\nhttps://app.getdyln.com/dashboard\nhttps://getdyln.com/unsubscribe\n© DYLN",
+        "capturedTemplateVariables": {
+          "firstName": "qa-synth-firstName"
+        },
+        "capturedRequiredLinks": [
+          "https://app.getdyln.com/dashboard",
+          "https://getdyln.com/unsubscribe"
+        ],
+        "capturedRequiredAssets": [],
+        "capturedSubjectHash": "sha256:05eb8aeb87ec775de65f410d568f96aa912471834ba8857ddacf0dd9c3b0d70e",
+        "capturedRenderedBodyHash": "sha256:7925be88eb72383a8feb65e2ebc1c2e731b055437c8aec56f82d05d99240154d"
       }
-    ]
+    ],
+    "finalVerdict": "FAIL"
   }
 }

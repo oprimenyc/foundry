@@ -1,0 +1,23 @@
+{
+  "missionId": "mission-dyln-governance-bridge",
+  "productTarget": "foundry",
+  "repoTarget": "C:\\Users\\jp718\\foundry",
+  "adapterType": "wigolo",
+  "criticality": "standard",
+  "allowedFileScope": ["lib/local-execution"],
+  "filesTouched": [],
+  "commandsRun": [
+    {
+      "command": "npm install -g wigolo",
+      "commandClass": "package_install",
+      "exitCode": 1,
+      "wallClockMs": 3210,
+      "retries": 1
+    }
+  ],
+  "cacheRefs": [],
+  "proofArtifacts": [],
+  "providerMutationOccurred": false,
+  "sourceMutationOccurred": false,
+  "notes": "npm install failed with a local TLS/OpenSSL certificate validation error (UNABLE_TO_GET_ISSUER_CERT_LOCALLY). Wigolo could not be installed, so no Wigolo execution occurred. Retried once, same failure."
+}

@@ -1,0 +1,57 @@
+{
+  "proof": "dyln-email-governance-cross-repo-binding@1",
+  "generatedAt": "2026-07-21T09:53:26.793Z",
+  "dylnRepoHead": "9f03187b9ec5e5dbe9ba80c781a1b514db62c63b",
+  "dylnMutated": false,
+  "realEmailSent": false,
+  "resendCalled": false,
+  "productionRecipients": false,
+  "providerStateModified": false,
+  "verdicts": {
+    "veridianEmailQaAdmission": "PASS",
+    "foundryEmailQaEvidence": "FAIL",
+    "eveEmailVerification": "PASS"
+  },
+  "sources": {
+    "foundryEvidencePath": "C:\\Users\\jp718\\foundry\\proof\\evidence\\dyln-email-qa-integration-proof.json",
+    "veridianAdmissionPath": "C:\\Users\\jp718\\Downloads\\workspace-847129d7-6103-4bd5-bf51-eaa3c760dd0f\\evidence\\proofs\\dyln-email-qa-admission\\SUMMARY.json",
+    "veridianEveEvidencePath": "C:\\Users\\jp718\\Downloads\\workspace-847129d7-6103-4bd5-bf51-eaa3c760dd0f\\evidence\\proofs\\eve-dyln-email-evidence\\SUMMARY.json"
+  },
+  "steps": [
+    {
+      "step": "1. all three evidence sources read successfully",
+      "status": "PASS",
+      "detail": "foundry=C:\\Users\\jp718\\foundry\\proof\\evidence\\dyln-email-qa-integration-proof.json, veridianAdmission=C:\\Users\\jp718\\Downloads\\workspace-847129d7-6103-4bd5-bf51-eaa3c760dd0f\\evidence\\proofs\\dyln-email-qa-admission\\SUMMARY.json, veridianEve=C:\\Users\\jp718\\Downloads\\workspace-847129d7-6103-4bd5-bf51-eaa3c760dd0f\\evidence\\proofs\\eve-dyln-email-evidence\\SUMMARY.json"
+    },
+    {
+      "step": "2. dyln repo HEAD is consistent across Foundry evidence, VERIDIAN admission, and E.V.E. verification",
+      "status": "PASS",
+      "detail": "foundry=9f03187b9ec5e5dbe9ba80c781a1b514db62c63b, veridianAdmission=9f03187b9ec5e5dbe9ba80c781a1b514db62c63b, veridianEve=9f03187b9ec5e5dbe9ba80c781a1b514db62c63b"
+    },
+    {
+      "step": "3. all three verdicts are well-formed values from the shared PASS/FAIL/BLOCKED/PASS_WITH_WARNINGS vocabulary",
+      "status": "PASS",
+      "detail": "foundry=FAIL, veridianAdmission=PASS, eve=PASS"
+    },
+    {
+      "step": "4. no real email sent, confirmed by all three evidence sources",
+      "status": "PASS",
+      "detail": "foundry.realProviderCallsMade=false, veridianAdmission.realEmailSent=false, veridianEve.realEmailSent=false"
+    },
+    {
+      "step": "5. dyln repo was never mutated by any evidence source",
+      "status": "PASS",
+      "detail": "foundry.dylnRepoWritten=false, veridianEve.dylnMutated=false"
+    },
+    {
+      "step": "6. no VERIDIAN database write and no Foundry mutation attempted by the bridge",
+      "status": "PASS",
+      "detail": "veridianAdmission.databaseWritten=false, veridianEve.foundryMutated=false"
+    },
+    {
+      "step": "7. every one of the 17 email fixtures confirms a non-production recipient and no provider call",
+      "status": "PASS",
+      "detail": "nonProduction=true, noProviderCall=true"
+    }
+  ]
+}

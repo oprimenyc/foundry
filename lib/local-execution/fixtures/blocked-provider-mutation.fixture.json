@@ -1,0 +1,24 @@
+{
+  "missionId": "mission-dyln-governance-bridge",
+  "productTarget": "foundry",
+  "repoTarget": "C:\\Users\\jp718\\foundry",
+  "adapterType": "generic",
+  "criticality": "high",
+  "allowedFileScope": ["lib/local-execution"],
+  "filesTouched": [],
+  "commandsRun": [
+    {
+      "command": "curl -X POST https://api.example-provider.test/v1/domains/rotate",
+      "commandClass": "provider_mutation",
+      "exitCode": 0,
+      "wallClockMs": 610,
+      "retries": 0
+    }
+  ],
+  "cacheRefs": [],
+  "proofArtifacts": ["proof/evidence/blocked-provider-mutation-attempt.json"],
+  "providerMutationOccurred": true,
+  "providerMutationGate": { "gateId": "localexec_gate_demo_001", "approved": false },
+  "sourceMutationOccurred": false,
+  "notes": "A local worker attempted a provider-mutating call and referenced an approval gate, but that gate has not been approved by a human. Evidence is accepted and reviewable; the run is BLOCKED pending approval, not treated as an authorized mutation."
+}

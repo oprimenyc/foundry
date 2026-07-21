@@ -1,0 +1,24 @@
+{
+  "missionId": "mission-dyln-governance-bridge",
+  "productTarget": "primeos",
+  "repoTarget": "C:\\Users\\jp718\\PrimeOS",
+  "adapterType": "primeos_tier",
+  "runtime": "primeos-local-execution-tier@1",
+  "criticality": "high",
+  "allowedFileScope": ["proof/evidence"],
+  "filesTouched": ["proof/evidence/primeos-local-execution-tier-proof.json"],
+  "commandsRun": [
+    {
+      "command": "node --import tsx scripts/primeos-local-tier-proof.ts",
+      "commandClass": "test_run",
+      "exitCode": 0,
+      "wallClockMs": 8400,
+      "retries": 0
+    }
+  ],
+  "cacheRefs": [],
+  "proofArtifacts": ["proof/evidence/primeos-local-execution-tier-proof.json"],
+  "providerMutationOccurred": false,
+  "sourceMutationOccurred": false,
+  "notes": "Demonstrates PrimeOS's LOCAL_EXECUTION_TIER contract read-only against this machine's local worker capability, with a proof artifact retained. No PrimeOS files were modified."
+}

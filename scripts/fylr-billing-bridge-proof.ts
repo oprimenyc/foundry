@@ -4,10 +4,10 @@
  * Reads fylr's real repo state read-only and invokes fylr's own,
  * already-committed Stripe billing lifecycle pytest suite
  * (tests/test_billing_lifecycle.py + two supporting tests in
- * tests/test_silent_failures.py) exactly as-is, builds Foundry's evidence
- * package around the real result, and confirms no live Stripe call, no
- * provider mutation, no product (fylr) mutation occurred anywhere in this
- * run.
+ * tests/test_silent_failures.py + tests/test_webhook_signature_rejection.py)
+ * exactly as-is, builds Foundry's evidence package around the real result,
+ * and confirms no live Stripe call, no provider mutation, no product (fylr)
+ * mutation occurred anywhere in this run.
  *
  * Run: npm run proof:fylr-billing-bridge
  */
@@ -69,9 +69,10 @@ async function main() {
     evidence.rejectionFindings.length === 0 ? "clean" : evidence.rejectionFindings.map((f) => f.code).join(", ")
   );
 
-  // 6. Verdict allows readiness (PASS or PASS_WITH_WARNINGS — the one known warning is the
-  //    absent dedicated invalid-signature-rejection unit test; the rejecting code path itself
-  //    is real and documented in webhookSignatureProofRef).
+  // 6. Verdict allows readiness (PASS or PASS_WITH_WARNINGS). The formerly-open warning —
+  //    absent dedicated invalid-signature-rejection unit test — was closed by fylr commit
+  //    aecb6bc4aec2baf505557a13459cc116fcde514d (tests/test_webhook_signature_rejection.py),
+  //    so a clean run now yields a full PASS.
   record(
     "6. final verdict allows readiness (PASS or PASS_WITH_WARNINGS)",
     evidence.verdict === "PASS" || evidence.verdict === "PASS_WITH_WARNINGS",

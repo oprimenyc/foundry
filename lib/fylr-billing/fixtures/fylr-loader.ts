@@ -37,6 +37,15 @@ export function getFylrRepoState(repoPath: string = fylrRepoPath()): FylrRepoSta
  * webhook POST in these tests patches `app.billing.stripe` and constructs a
  * genuine offline HMAC signature (see tests/test_billing_lifecycle.py
  * ::_stripe_signed_payload) against the real `/billing/webhook` route.
+ *
+ * tests/test_webhook_signature_rejection.py (added in fylr commit
+ * aecb6bc4aec2baf505557a13459cc116fcde514d) closes the previously-open
+ * UNSIGNED_WEBHOOK_REJECTION_UNIT_TESTED coverage gap. Unlike the two files
+ * above it does NOT mock `app.billing.stripe` — it exercises the real
+ * `stripe.Webhook.construct_event` signature-verification path with a
+ * genuine offline HMAC signature (same construction, no network call), so a
+ * regression that silently bypassed verification would fail it even though
+ * the mocked lifecycle tests stay green.
  */
 const BILLING_TEST_ARGS = [
   "-m",
@@ -44,6 +53,7 @@ const BILLING_TEST_ARGS = [
   "tests/test_billing_lifecycle.py",
   "tests/test_silent_failures.py::test_webhook_idempotency_no_double_fulfill",
   "tests/test_silent_failures.py::test_sf05_webhook_double_commit_failure_returns_5xx",
+  "tests/test_webhook_signature_rejection.py",
   "-v",
   "--tb=short",
 ];

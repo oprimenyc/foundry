@@ -11,8 +11,15 @@ import type {
 
 const EVIDENCE_ARTIFACT_KIND = "fylr_billing_evidence_package";
 
-/** fylr HEAD confirmed read-only during mission Phase 1 (commit message: "Fix Stripe subscription grace-period race and cancellation downgrade target"). */
-export const EXPECTED_FYLR_BILLING_HEAD = "beba52a9a178a9935ef90b157dceb585aa8f4f2d";
+/**
+ * fylr HEAD confirmed read-only during mission Phase 1 (commit message: "Fix
+ * Stripe subscription grace-period race and cancellation downgrade target").
+ * Superseded by aecb6bc4aec2baf505557a13459cc116fcde514d ("add unsigned
+ * webhook rejection tests"), which closes the UNSIGNED_WEBHOOK_REJECTION_UNIT_TESTED
+ * coverage gap this bridge previously reported as a warning — see
+ * tests/test_webhook_signature_rejection.py in the fylr repo.
+ */
+export const EXPECTED_FYLR_BILLING_HEAD = "aecb6bc4aec2baf505557a13459cc116fcde514d";
 
 /**
  * Required lifecycle-behavior coverage checklist (mission Phase 2/3). Every
@@ -32,7 +39,16 @@ function buildLifecycleCoverage(testRun: FylrBillingTestRunResult): FylrBillingL
     { code: "FULL_LIFECYCLE_RECOVERY_INTEGRATION", label: "full failed -> past_due -> recovered sequence never downgrades the plan, and un-recovered expiry still degrades access via middleware", present: passed("test_full_lifecycle_recovery_never_downgrades") },
     { code: "WEBHOOK_IDEMPOTENT_DUPLICATE_HANDLING", label: "a duplicate Stripe webhook event id is not double-processed (StripeWebhookEvent idempotency table)", present: passed("test_webhook_idempotency_no_double_fulfill") },
     { code: "WEBHOOK_FAILURE_PATH_RETURNS_5XX", label: "a handler failure whose 'failed' status also fails to persist still returns 5xx so Stripe retries", present: passed("test_sf05_webhook_double_commit_failure_returns_5xx") },
-    { code: "UNSIGNED_WEBHOOK_REJECTION_UNIT_TESTED", label: "a deliberately invalid/wrong Stripe-Signature header is unit-tested as rejected (400)", present: false },
+    {
+      code: "UNSIGNED_WEBHOOK_REJECTION_UNIT_TESTED",
+      label: "a deliberately invalid/wrong Stripe-Signature header is unit-tested as rejected (400)",
+      present: [
+        "test_missing_signature_header_is_rejected",
+        "test_malformed_signature_header_is_rejected",
+        "test_signature_signed_with_wrong_secret_is_rejected",
+        "test_tampered_payload_after_signing_is_rejected",
+      ].every(passed),
+    },
   ];
 }
 
@@ -46,11 +62,15 @@ export interface BuildFylrBillingEvidenceOptions {
  * committed pytest suite exactly as-is. Never calls live Stripe, never
  * mutates fylr's database or files, never writes to the fylr repo. Enforces
  * the mission's Phase 3 "must reject" rules by capping the verdict at
- * BLOCKED whenever a rejection finding fires. The one known coverage gap
- * (no dedicated unit test deliberately sends a wrong Stripe-Signature and
- * asserts rejection — the rejecting code path itself exists in
- * app/billing.py::_handle_stripe_webhook) is reported as PASS_WITH_WARNINGS,
- * never silently upgraded to a full PASS.
+ * BLOCKED whenever a rejection finding fires. The formerly-open coverage gap
+ * (no dedicated unit test deliberately sent a wrong/missing Stripe-Signature
+ * and asserted rejection) was closed in fylr commit
+ * aecb6bc4aec2baf505557a13459cc116fcde514d by
+ * tests/test_webhook_signature_rejection.py; if that suite and every other
+ * required lifecycle check pass, this now yields a full PASS instead of
+ * PASS_WITH_WARNINGS. A verdict still only ever reflects what the real,
+ * already-committed pytest run reported — nothing here is asserted without
+ * a corresponding dynamic check.
  */
 export async function buildFylrBillingEvidence(options: BuildFylrBillingEvidenceOptions = {}): Promise<FylrBillingEvidencePackage> {
   const repo = getFylrRepoState(options.fylrRepoPath);
@@ -124,7 +144,8 @@ export async function buildFylrBillingEvidence(options: BuildFylrBillingEvidence
     lifecycleEventCoverage,
     webhookSignatureProofRef:
       "app/billing.py:816-831 (_handle_stripe_webhook: stripe.Webhook.construct_event + SignatureVerificationError -> 400 Invalid signature); " +
-      "tests/test_billing_lifecycle.py:_stripe_signed_payload (genuine Stripe-format HMAC-SHA256 't=<ts>,v1=<sig>' signature posted to the real /billing/webhook route)",
+      "tests/test_billing_lifecycle.py:_stripe_signed_payload (genuine Stripe-format HMAC-SHA256 't=<ts>,v1=<sig>' signature posted to the real /billing/webhook route); " +
+      "tests/test_webhook_signature_rejection.py (fylr commit aecb6bc4aec2baf505557a13459cc116fcde514d — missing/empty/malformed Stripe-Signature header, wrong-secret signature, and tampered-payload-after-signing all asserted 400 Invalid signature with no DB side effects, against the real, unmocked stripe.Webhook.construct_event verification path on both /billing/webhook and the legacy /api/webhooks/stripe alias)",
     testProofRefs: testRun.testNames,
     commandEvidenceRefs: [testRun.command, `exitCode=${testRun.exitCode}`, `${testRun.passed} passed, ${testRun.failed} failed`],
     expectedStateTransitions,

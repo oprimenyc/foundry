@@ -1,6 +1,6 @@
 {
   "proof": "foundry-dyln-email-qa-integration@1",
-  "generatedAt": "2026-07-21T09:53:19.684Z",
+  "generatedAt": "2026-07-21T11:25:14.981Z",
   "realProviderCallsMade": false,
   "dylnRepoWritten": false,
   "steps": [
@@ -12,7 +12,7 @@
     {
       "step": "2. dyln repo path/HEAD/branch captured",
       "status": "PASS",
-      "detail": "path=C:\\REPLIT PROJECTS\\dyln\\dyln, head=9f03187b9ec5e5dbe9ba80c781a1b514db62c63b, branch=feat/v1-deterministic-layer"
+      "detail": "path=C:\\REPLIT PROJECTS\\dyln\\dyln, head=214e401a136b8d409a97ff31c37565d2cf7f2a1d, branch=feat/v1-deterministic-layer"
     },
     {
       "step": "3. no real provider call made for any dyln fixture",
@@ -27,7 +27,7 @@
     {
       "step": "5. only the known follow-up-email sender-mismatch gap fails; nothing else FAILs or is BLOCKED",
       "status": "PASS",
-      "detail": "verdicts={\"PASS\":16,\"FAIL\":1}"
+      "detail": "verdicts={\"PASS\":17}"
     }
   ],
   "verdictBreakdown": {
@@ -36,6 +36,7 @@
       "business-credit-received",
       "contact-sales-admin-notification",
       "contact-sales-customer-autoreply",
+      "follow-up-email",
       "missed-call-alert",
       "onboarding-day1",
       "onboarding-day3",
@@ -48,18 +49,15 @@
       "waitlist-admin-notification",
       "waitlist-confirmation",
       "welcome"
-    ],
-    "FAIL": [
-      "follow-up-email"
     ]
   },
   "bundle": {
     "dylnRepoPath": "C:\\REPLIT PROJECTS\\dyln\\dyln",
-    "dylnRepoHead": "9f03187b9ec5e5dbe9ba80c781a1b514db62c63b",
+    "dylnRepoHead": "214e401a136b8d409a97ff31c37565d2cf7f2a1d",
     "dylnRepoBranch": "feat/v1-deterministic-layer",
     "fixturesDir": "C:\\REPLIT PROJECTS\\dyln\\dyln\\server\\services\\__fixtures__\\email",
     "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
-    "generatedAt": "2026-07-21T09:53:19.683Z",
+    "generatedAt": "2026-07-21T11:25:14.980Z",
     "fixtures": [
       {
         "fixtureId": "ai-degradation-alert",
@@ -68,8 +66,8 @@
         "fixtureHash": "sha256:c53c7403911dc14dea7e6dce76d44bb257302a53357734a1c905622404bc85fc",
         "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_5e940f41dc55bbd9953e864b",
-        "inboxMessageId": "art_892bcd5fd01cdc897f6ea75e",
+        "evidenceId": "art_bc64ce03aeb94ff4c1b7d21b",
+        "inboxMessageId": "art_6c8ed834f8e7e71459a31b99",
         "renderedPayloadHash": "sha256:dcf3528c2719a0cad64dd1e10e9dde88c147c15cf8fc3464f1b6fdccecbdaca9",
         "senderValidation": {
           "ok": true,
@@ -117,8 +115,8 @@
         "fixtureHash": "sha256:82edd40205080fdc37c169b17d7a51a0649e6547c026c5202b19365aafbac1b9",
         "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_d6ff6fd79bf358a52c523d84",
-        "inboxMessageId": "art_cb7ec7c965afa775ed7a45e1",
+        "evidenceId": "art_9b724c699a065765ae3f92cb",
+        "inboxMessageId": "art_0cd80987a9b652532e332917",
         "renderedPayloadHash": "sha256:9a44072b88305be94469a90303e4e64cbecb6f0217a4f80119b1f5c42e60e7f7",
         "senderValidation": {
           "ok": true,
@@ -165,8 +163,8 @@
         "fixtureHash": "sha256:20167a94ec5850a7edfc59300a1f60217888ff5651dc261cf44030edb32c9947",
         "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_263861550ccec8a09151e081",
-        "inboxMessageId": "art_8d4cdc85cef0570c2fb4790b",
+        "evidenceId": "art_ba583e3eff57906d6d44a300",
+        "inboxMessageId": "art_3e3955e237cb649ad0918587",
         "renderedPayloadHash": "sha256:b2630e6b6f074595bf5aa9239267ee60bb0ad7dad10b25a4f9fb01d7b8224f40",
         "senderValidation": {
           "ok": true,
@@ -221,8 +219,8 @@
         "fixtureHash": "sha256:525f9ae99145fdb45fbbc87d2ffaa70237f91391b5bd3088b4301b201cc09f58",
         "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_8222f3701eabf39256381d7c",
-        "inboxMessageId": "art_f0a7d15f90340e3b4622651f",
+        "evidenceId": "art_3f4f32697bcb90389ec1a289",
+        "inboxMessageId": "art_144c5c8e1d67ff783869bf41",
         "renderedPayloadHash": "sha256:10f0a5299217991b2453d020f5f50efe98e6658b71c208b9d47c0fde611d3532",
         "senderValidation": {
           "ok": true,
@@ -268,21 +266,15 @@
         "fixtureId": "follow-up-email",
         "functionName": "sendFollowUpEmail",
         "module": "server/services/emailFollowUpService.ts",
-        "fixtureHash": "sha256:f5f58f9d27856dfd1085e7b743778c0e92fcebc3743c7c547c49644f4b4d3b68",
+        "fixtureHash": "sha256:53de6f3084054a56ea7774240b7fa646ee0c119709f0e82ecd850e3ff5c8ec46",
         "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
-        "verdict": "FAIL",
-        "evidenceId": "art_9771d40b07d5e9fc2022e5d8",
-        "inboxMessageId": "art_ffa90e17b616bc53de79c5b5",
+        "verdict": "PASS",
+        "evidenceId": "art_00c97cbf02b368d43c7e3cfc",
+        "inboxMessageId": "art_3ff8f24532925e8cf8e42919",
         "renderedPayloadHash": "sha256:f983eba2fcf4844b6d2c087cbcbddc9e5d7fca8a291cc688914a7e03c5af4756",
         "senderValidation": {
-          "ok": false,
-          "issues": [
-            {
-              "code": "SENDER_MISMATCH",
-              "message": "from address \"noreply@getdyln.com\" does not match declared sender \"support@getdyln.com\"",
-              "severity": "error"
-            }
-          ]
+          "ok": true,
+          "issues": []
         },
         "replyToValidation": {
           "ok": true,
@@ -302,9 +294,9 @@
         },
         "providerCallMade": false,
         "productionRecipient": false,
-        "capturedSenderIdentity": "noreply@getdyln.com",
-        "capturedFromAddress": "noreply@getdyln.com",
-        "capturedReplyToAddress": "noreply@getdyln.com",
+        "capturedSenderIdentity": "support@getdyln.com",
+        "capturedFromAddress": "support@getdyln.com",
+        "capturedReplyToAddress": "support@getdyln.com",
         "capturedSubject": "Following up on your DYLN quote",
         "capturedRenderedBody": "[Foundry QA payload synthesized from dyln fixture \"follow-up-email\" — not dyln's live-rendered output]\nfromName: qa-synth-fromName",
         "capturedTemplateVariables": {
@@ -322,8 +314,8 @@
         "fixtureHash": "sha256:ce481c72d581f1bb7415a618839c989ab9483f9e811334af454e7fc1eb6deebd",
         "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_896bf758bf95b152369516bc",
-        "inboxMessageId": "art_bea7d04d51a99749fee58971",
+        "evidenceId": "art_fa071c60ca92edbe657c0d1a",
+        "inboxMessageId": "art_fce1a0291da607bb9442ba8a",
         "renderedPayloadHash": "sha256:e63fedbf56812eba3bea507d244c7663c5a846bff9a6eed88344b6a57d41529f",
         "senderValidation": {
           "ok": true,
@@ -372,8 +364,8 @@
         "fixtureHash": "sha256:bc6f6b17c503f8c739498bbc41059741647514c498324fa6cb974bfb1de0275a",
         "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_cf104236fd8f1dafcd5f6aa5",
-        "inboxMessageId": "art_23917e98c241b8d1fc4e8ca0",
+        "evidenceId": "art_f1e27a83038dda9aa047dbce",
+        "inboxMessageId": "art_9aee72baaa2ae720fb8cf7c0",
         "renderedPayloadHash": "sha256:ba67334c837e093c588d3523d1aa7215aac3a9daf26af3c93b6ddffa0eb6dbd7",
         "senderValidation": {
           "ok": true,
@@ -420,8 +412,8 @@
         "fixtureHash": "sha256:464db57075f3b1e0f2052121bacc5812e4e3415324f0bbd32f611fb6436760f0",
         "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_50b58e5b995b6c80162f6ee7",
-        "inboxMessageId": "art_652e42fd9054f99d9cd48dd6",
+        "evidenceId": "art_4b7e2698b4ebf19c1eef7502",
+        "inboxMessageId": "art_cf595871b14748d3c5aedad1",
         "renderedPayloadHash": "sha256:8c3084bdb60f6bcc0c9bb27aa6843035a0c52edcbdbe441162f5587df7df8d62",
         "senderValidation": {
           "ok": true,
@@ -468,8 +460,8 @@
         "fixtureHash": "sha256:454afab8f76f82f9f64cabf560c51892fbd0642befc819224f3eaa639172a6d6",
         "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_e51b3a171d5ab8efedfe86f3",
-        "inboxMessageId": "art_c59d55c1681ea2d606407c1d",
+        "evidenceId": "art_bbd65e8dee4b0f5630193d02",
+        "inboxMessageId": "art_fcc5fd17b8ec5a0c3d4cc86b",
         "renderedPayloadHash": "sha256:6526f8543cd05afc17df53795a5c2b0d0af40129f5c310c2881166428e7cd5e2",
         "senderValidation": {
           "ok": true,
@@ -519,8 +511,8 @@
         "fixtureHash": "sha256:96813c21ad2b4f2e60ba583d5275e6132249309f707e0ac9ad590bfbca0b6ea7",
         "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_84eb8a21f78ba3a898d7a7ff",
-        "inboxMessageId": "art_2eed76f3fcaacd6e3fdae520",
+        "evidenceId": "art_c8d62f9274e9b1137c4a8b15",
+        "inboxMessageId": "art_6d1256d8ce3b172f6fa04c42",
         "renderedPayloadHash": "sha256:d5c62d9c059de99922a8c89e37907f95366e97eeed00eb3ccb674f2e30ef0ced",
         "senderValidation": {
           "ok": true,
@@ -568,8 +560,8 @@
         "fixtureHash": "sha256:1c7dd4b05f21b39fa88f91dab26441cc33f9260321cc7abec5f7179125582244",
         "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_7ce7831d2eca1ce7a212a3ca",
-        "inboxMessageId": "art_05fe398e832617338405d469",
+        "evidenceId": "art_946ef6d714056d6fe054027c",
+        "inboxMessageId": "art_9be6cc9914427ad9473a5eb4",
         "renderedPayloadHash": "sha256:1f95d5aa72d38384474e119ffb7e0d738bd86b5b5b0b6339962842a81780e9b8",
         "senderValidation": {
           "ok": true,
@@ -617,8 +609,8 @@
         "fixtureHash": "sha256:4b42a31056c30ea0c5d2019f55db5fc1301abc1074b4467640d83fd0adfc006a",
         "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_a0b570ec4451a9f3a3e04793",
-        "inboxMessageId": "art_ec846f3ae1729e12de85adb2",
+        "evidenceId": "art_273be63f924c8856abeae05a",
+        "inboxMessageId": "art_26a77fcc003f28a4de0a2029",
         "renderedPayloadHash": "sha256:068d4319276b31e5583b884b245763c25a139df200fab36e9fbe8f5775206e4b",
         "senderValidation": {
           "ok": true,
@@ -666,8 +658,8 @@
         "fixtureHash": "sha256:6092c28671569915d651532ea17471cb8984b521cfd3afbcfe4256e2ceb924ba",
         "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_5d54eaf5725feae8947baedc",
-        "inboxMessageId": "art_71911d65264b874b6d849297",
+        "evidenceId": "art_7c74b4a7fbb204bf998201ca",
+        "inboxMessageId": "art_8fcfb4fd6eced25f69c3358a",
         "renderedPayloadHash": "sha256:78794b115a7507b24d4e8063768dfda161db919d06a6821745f758894029278b",
         "senderValidation": {
           "ok": true,
@@ -717,8 +709,8 @@
         "fixtureHash": "sha256:991b8a0c434299b857eda5d4a49ba1cdf0f83460286de78405a8775238b12ec9",
         "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_c277c5442ef2fb102a005cf2",
-        "inboxMessageId": "art_0b0c822b1e1a2594923fcc9b",
+        "evidenceId": "art_0237733539e1b935684d15f2",
+        "inboxMessageId": "art_6709d66cdfc57cfc8d2d93c9",
         "renderedPayloadHash": "sha256:f048383fe838365734030a956dd051d7b89da80de983fb0618b84c88d43754cd",
         "senderValidation": {
           "ok": true,
@@ -768,8 +760,8 @@
         "fixtureHash": "sha256:6319c509f8ab1493ad45b0b706992de5278867d2e53d045cc8bf9897fef4b237",
         "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_8a63a1cae8e5b2b843d867b2",
-        "inboxMessageId": "art_05ae16adc7c391cfd3e3632a",
+        "evidenceId": "art_8258764331c96a3943d3e3f6",
+        "inboxMessageId": "art_3d804e6aafd7475dd29bd1e5",
         "renderedPayloadHash": "sha256:7e23cdff240aa5bed6e7f585c912a0614fd64050082dfde1b2f03e2102e81d3a",
         "senderValidation": {
           "ok": true,
@@ -813,8 +805,8 @@
         "fixtureHash": "sha256:70255a8ad508ea7fdb94c4810104d74598b19709d3ddc9e6c9041981b154196a",
         "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_f6ac5feb9c328a60d270fc36",
-        "inboxMessageId": "art_3eaa0a1e44edb7b1b0ff0a1c",
+        "evidenceId": "art_9515566c52c8511575f1382f",
+        "inboxMessageId": "art_58a9a0b4c41a3140acbf2752",
         "renderedPayloadHash": "sha256:1f8e8c980ca42f05629cf9174f0d3f039d023244c639981201d073898b5aff8c",
         "senderValidation": {
           "ok": true,
@@ -859,8 +851,8 @@
         "fixtureHash": "sha256:47d5c1e96850168ae87edff13a625e0539e0a64d8017e690182cab27516d9155",
         "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
         "verdict": "PASS",
-        "evidenceId": "art_f1c006749bae94b0d8bf504d",
-        "inboxMessageId": "art_6377111321ca10ec0a347e11",
+        "evidenceId": "art_40e5f2f3715bbadd43bf522d",
+        "inboxMessageId": "art_796361fad1b1f0147dabb9e0",
         "renderedPayloadHash": "sha256:4178bfb8eb5a9cc1ae9a6afc9d540dd5b3d96b9c12b4acd6a69a5614e3cb1ced",
         "senderValidation": {
           "ok": true,
@@ -901,6 +893,6 @@
         "capturedRenderedBodyHash": "sha256:7925be88eb72383a8feb65e2ebc1c2e731b055437c8aec56f82d05d99240154d"
       }
     ],
-    "finalVerdict": "FAIL"
+    "finalVerdict": "PASS"
   }
 }

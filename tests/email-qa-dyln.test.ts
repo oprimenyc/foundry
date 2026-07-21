@@ -142,10 +142,11 @@ test("full dyln integration: 17 real fixtures, no provider call, inbox capture, 
     assert.ok(f.renderedPayloadHash.startsWith("sha256:"), `${f.fixtureId} renderedPayloadHash malformed`);
   }
 
-  // Only the known, documented sender-mismatch gap fails; nothing else FAILs or is BLOCKED.
+  // dyln closed the follow-up-email sender-mismatch gap (commit `214e401`,
+  // "fix follow up email sender identity") — nothing FAILs or is BLOCKED anymore.
   const failed = bundle.fixtures.filter((f) => f.verdict === "FAIL").map((f) => f.fixtureId);
   const blocked = bundle.fixtures.filter((f) => f.verdict === "BLOCKED");
-  assert.deepEqual(failed, ["follow-up-email"]);
+  assert.deepEqual(failed, []);
   assert.deepEqual(blocked, []);
 
   // Virtual inbox actually captured all 17 messages.
@@ -181,9 +182,10 @@ test("integration evidence carries product config hash, per-check breakdowns, pr
     assert.ok(Array.isArray(f.assetCheck.missing), `${f.fixtureId} missing assetCheck`);
   }
 
-  // The known follow-up-email sender-mismatch FAIL caps the whole integration's final verdict at FAIL.
+  // follow-up-email's sender-mismatch gap is closed (dyln commit `214e401`) — it now
+  // PASSes like every other Tier A fixture, and the integration's final verdict is PASS.
   const followUp = bundle.fixtures.find((f) => f.fixtureId === "follow-up-email");
-  assert.equal(followUp?.verdict, "FAIL");
-  assert.equal(followUp?.senderValidation.ok, false);
-  assert.equal(bundle.finalVerdict, "FAIL");
+  assert.equal(followUp?.verdict, "PASS");
+  assert.equal(followUp?.senderValidation.ok, true);
+  assert.equal(bundle.finalVerdict, "PASS");
 });

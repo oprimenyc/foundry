@@ -1,7 +1,7 @@
 {
   "proof": "dyln-email-governance-cross-repo-binding@1",
-  "generatedAt": "2026-07-21T09:53:26.793Z",
-  "dylnRepoHead": "9f03187b9ec5e5dbe9ba80c781a1b514db62c63b",
+  "generatedAt": "2026-07-21T11:27:47.318Z",
+  "dylnRepoHead": "214e401a136b8d409a97ff31c37565d2cf7f2a1d",
   "dylnMutated": false,
   "realEmailSent": false,
   "resendCalled": false,
@@ -9,7 +9,7 @@
   "providerStateModified": false,
   "verdicts": {
     "veridianEmailQaAdmission": "PASS",
-    "foundryEmailQaEvidence": "FAIL",
+    "foundryEmailQaEvidence": "PASS",
     "eveEmailVerification": "PASS"
   },
   "sources": {
@@ -26,12 +26,12 @@
     {
       "step": "2. dyln repo HEAD is consistent across Foundry evidence, VERIDIAN admission, and E.V.E. verification",
       "status": "PASS",
-      "detail": "foundry=9f03187b9ec5e5dbe9ba80c781a1b514db62c63b, veridianAdmission=9f03187b9ec5e5dbe9ba80c781a1b514db62c63b, veridianEve=9f03187b9ec5e5dbe9ba80c781a1b514db62c63b"
+      "detail": "foundry=214e401a136b8d409a97ff31c37565d2cf7f2a1d, veridianAdmission=214e401a136b8d409a97ff31c37565d2cf7f2a1d, veridianEve=214e401a136b8d409a97ff31c37565d2cf7f2a1d"
     },
     {
       "step": "3. all three verdicts are well-formed values from the shared PASS/FAIL/BLOCKED/PASS_WITH_WARNINGS vocabulary",
       "status": "PASS",
-      "detail": "foundry=FAIL, veridianAdmission=PASS, eve=PASS"
+      "detail": "foundry=PASS, veridianAdmission=PASS, eve=PASS"
     },
     {
       "step": "4. no real email sent, confirmed by all three evidence sources",

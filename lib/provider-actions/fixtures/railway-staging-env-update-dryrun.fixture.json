@@ -1,0 +1,18 @@
+{
+  "project": "foundry-ops-demo",
+  "providerType": "railway",
+  "actionType": "update_deployment_env_var",
+  "targetEnvironment": "staging",
+  "targetDescription": "Synthetic Railway staging service environment variable set — demonstrates the full ingest -> BLOCKED (pending) -> gate approval -> PASS_WITH_WARNINGS flow; not tied to a specific product's real infrastructure",
+  "forcePushRequired": false,
+  "rollbackPlan": [
+    "Revert the environment variable(s) to their previous value in the Railway dashboard and trigger a redeploy if the update causes a regression."
+  ],
+  "verificationPlan": [
+    "The Railway service restarts and reports healthy with the updated variable(s) applied."
+  ],
+  "preApprovedGateReasons": [],
+  "knownPrerequisiteGaps": [],
+  "sourceReference": "n/a — synthetic dry-run fixture, no specific incident.",
+  "notes": "Used by the proof script and test suite to exercise the approval-gate lifecycle end to end: ingest (BLOCKED, pending), decide both required gates approved, re-query the operator surface (PASS_WITH_WARNINGS)."
+}

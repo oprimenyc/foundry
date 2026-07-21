@@ -1,0 +1,18 @@
+{
+  "project": "dyln",
+  "providerType": "railway",
+  "actionType": "update_deployment_env_var",
+  "targetEnvironment": "staging",
+  "targetDescription": "dyln staging deployment environment variable set — advisory only, no specific exposed value driving this plan",
+  "forcePushRequired": false,
+  "rollbackPlan": [
+    "Revert the environment variable(s) to their previous value in the deployment provider's dashboard and trigger a redeploy if the update causes a regression."
+  ],
+  "verificationPlan": [
+    "The dyln staging service restarts and reports healthy with the updated variable(s) applied."
+  ],
+  "preApprovedGateReasons": [],
+  "knownPrerequisiteGaps": [],
+  "sourceReference": "dyln read-only handoff docs (C:\\REPLIT PROJECTS\\dyln\\dyln, HEAD 9f03187b9ec5e5dbe9ba80c781a1b514db62c63b) — no specific incident; a general staging env-update advisory scenario for this mission's fixture set.",
+  "notes": "dyln's actual deployment provider was not independently confirmed from its read-only docs during this mission; \"railway\" is used here as a representative deployment-env provider for this advisory scenario, not a verified fact about dyln's infrastructure."
+}

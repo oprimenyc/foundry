@@ -1,0 +1,19 @@
+{
+  "project": "panticandy",
+  "providerType": "github",
+  "actionType": "revoke_credential",
+  "targetEnvironment": "production",
+  "targetDescription": "GitHub Personal Access Token embedded in origin remote URL (github.com/oprimenyc/partigoddess.git) for C:\\REPLIT PROJECTS\\Panticandy\\Panticandy",
+  "forcePushRequired": false,
+  "rollbackPlan": [
+    "There is no safe rollback to a revoked token — if git access is still needed, issue a fresh token scoped to the minimum required permissions and store it via a credential manager, never in the remote URL again."
+  ],
+  "verificationPlan": [
+    "The revoked token returns 401/403 on the GitHub API.",
+    "Ordinary git operations succeed using credential-manager-based auth with no token embedded in .git/config."
+  ],
+  "preApprovedGateReasons": [],
+  "knownPrerequisiteGaps": [],
+  "sourceReference": "PANTICANDY_SECRET_CONTAINMENT_CURRENT_TRUTH.md (HEAD 81ff4680d33a9ee24bb6a3f2d120b98002e2daaa) — local containment already stripped the token from .git/config; revocation at GitHub itself is the outstanding owner action.",
+  "notes": "Read-only source: C:\\REPLIT PROJECTS\\Panticandy\\Panticandy. This fixture describes the future revocation only; no PantiCandy file was touched to produce it."
+}

@@ -1,0 +1,19 @@
+{
+  "project": "primeopp",
+  "providerType": "generic_env",
+  "actionType": "dns_advisory",
+  "targetEnvironment": "production",
+  "targetDescription": "Future production domain cutover to primeopp.com (or an alternate domain) — no domain purchased yet, no DNS provider configured",
+  "forcePushRequired": false,
+  "rollbackPlan": [
+    "Revert the DNS record to its previous value at the registrar/DNS provider and allow propagation, once one exists to revert."
+  ],
+  "verificationPlan": [
+    "DNS propagation confirmed via an external resolver query showing the expected record value.",
+    "Stripe webhook endpoint (https://<domain>/api/webhook) responds correctly once registered in the Stripe Dashboard per PrimeOpp's own Go-Live checklist."
+  ],
+  "preApprovedGateReasons": [],
+  "knownPrerequisiteGaps": [],
+  "sourceReference": "PRIMEOPP_DOMAIN_READINESS.md: primeopp.com is a placeholder referenced in code (email.ts, terms.tsx, README.md), not evidence of ownership; deployment target is Replit's own autoscale (no Vercel/Railway/Fly/Cloudflare config found in the repo).",
+  "notes": "Read-only source: C:\\Users\\jp718\\Documents\\GitHub\\PrimeOpp. This module has no DNS provider integration and cannot execute this action regardless of approval — see the dns-advisory adapter's fixed prerequisiteMet:true / permanently-advisory verdict rule."
+}

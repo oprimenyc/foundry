@@ -1,0 +1,18 @@
+{
+  "project": "vitalcore",
+  "providerType": "google_oauth",
+  "actionType": "rotate_credential",
+  "targetEnvironment": "production",
+  "targetDescription": "GOOGLE_CLIENT_SECRET, tracked in vITALCore's committed .env (HEAD f880dda76923229b8cb24ea2b4ea5fb9869a53dd) and confirmed already pushed to origin/repositioning-batch-3",
+  "forcePushRequired": false,
+  "rollbackPlan": [
+    "Google Cloud Console allows reverting only if the old secret has not yet been retired — otherwise regenerate again and redeploy."
+  ],
+  "verificationPlan": [
+    "The OAuth sign-in flow succeeds end-to-end with the new client secret in every environment."
+  ],
+  "preApprovedGateReasons": [],
+  "knownPrerequisiteGaps": [],
+  "sourceReference": "VITALCORE_ENV_CONTAINMENT_ACTIONS.md, \"ACTION REQUIRED\" item 1: GOOGLE_CLIENT_SECRET — reset/regenerate via Google Cloud Console -> APIs & Services -> Credentials.",
+  "notes": "Read-only source: C:\\Users\\jp718\\OneDrive\\Desktop\\_SORTED\\Active_Projects\\vitalcore. GOOGLE_CLIENT_ID (not a secret, not rotated by this action) is a separate, non-sensitive value per the source containment doc."
+}

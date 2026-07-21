@@ -1,0 +1,18 @@
+{
+  "project": "foundry-ops-demo",
+  "providerType": "fly",
+  "actionType": "verify_service_health",
+  "targetEnvironment": "staging",
+  "targetDescription": "Synthetic Fly.io staging service readiness/liveness check — read-only, not tied to a specific product's real infrastructure",
+  "forcePushRequired": false,
+  "rollbackPlan": [
+    "Not applicable — a read-only health check has nothing to roll back."
+  ],
+  "verificationPlan": [
+    "The service's health endpoint returns a healthy status code within its expected response time."
+  ],
+  "preApprovedGateReasons": [],
+  "knownPrerequisiteGaps": [],
+  "sourceReference": "n/a — synthetic dry-run fixture, no specific incident.",
+  "notes": "Demonstrates the one action type that never requires an approval gate — non-mutating, PASS immediately on a clean dry-run."
+}

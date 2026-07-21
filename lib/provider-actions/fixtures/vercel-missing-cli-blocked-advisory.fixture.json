@@ -1,0 +1,18 @@
+{
+  "project": "foundry-ops-demo",
+  "providerType": "vercel",
+  "actionType": "update_deployment_env_var",
+  "targetEnvironment": "staging",
+  "targetDescription": "Synthetic Vercel staging project environment variable set — blocked on a missing local prerequisite, not tied to a specific product's real infrastructure",
+  "forcePushRequired": false,
+  "rollbackPlan": [
+    "Revert the environment variable(s) to their previous value in the Vercel dashboard and redeploy if the update causes a regression."
+  ],
+  "verificationPlan": [
+    "A fresh Vercel deployment reports the updated variable applied and the app starts healthy."
+  ],
+  "preApprovedGateReasons": [],
+  "knownPrerequisiteGaps": ["vercel-cli"],
+  "sourceReference": "n/a — synthetic dry-run fixture demonstrating a missing local prerequisite, no specific incident.",
+  "notes": "Demonstrates that a missing prerequisite (Vercel CLI/dashboard access not confirmed) BLOCKS regardless of approval-gate status — distinct from the pending-approval BLOCKED reason every other mutating-action fixture in this set demonstrates."
+}

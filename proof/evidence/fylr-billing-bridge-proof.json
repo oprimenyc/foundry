@@ -1,0 +1,189 @@
+{
+  "proof": "foundry-fylr-billing-bridge@1",
+  "generatedAt": "2026-07-21T13:41:48.910Z",
+  "fylrMutated": false,
+  "liveStripeCallMade": false,
+  "providerMutated": false,
+  "productMutated": false,
+  "steps": [
+    {
+      "step": "1. fylr repo path/HEAD/branch captured read-only",
+      "status": "PASS",
+      "detail": "path=C:\\REPLIT PROJECTS\\fylr\\fylr, head=beba52a9a178a9935ef90b157dceb585aa8f4f2d, branch=main"
+    },
+    {
+      "step": "2. fylr HEAD is at the expected billing lifecycle commit",
+      "status": "PASS",
+      "detail": "expected=beba52a9a178a9935ef90b157dceb585aa8f4f2d, actual=beba52a9a178a9935ef90b157dceb585aa8f4f2d"
+    },
+    {
+      "step": "3. Foundry evidence package built from fylr's real pytest run",
+      "status": "PASS",
+      "detail": "evidenceId=art_f895bf081d0deeaf5a4de638, verdict=PASS_WITH_WARNINGS"
+    },
+    {
+      "step": "4. fylr billing lifecycle pytest run captured passing test proof refs",
+      "status": "PASS",
+      "detail": "testProofRefs=9: tests/test_billing_lifecycle.py::test_payment_succeeded_clears_grace_period, tests/test_billing_lifecycle.py::test_subscription_past_due_does_not_downgrade_and_preserves_grace, tests/test_billing_lifecycle.py::test_subscription_past_due_starts_defensive_grace_if_none_active, tests/test_billing_lifecycle.py::test_subscription_deleted_downgrades_to_free, tests/test_billing_lifecycle.py::test_subscription_updated_canceled_downgrades_to_free, tests/test_billing_lifecycle.py::test_webhook_unknown_customer_is_safe_noop, tests/test_billing_lifecycle.py::test_full_lifecycle_recovery_never_downgrades, tests/test_silent_failures.py::test_webhook_idempotency_no_double_fulfill, tests/test_silent_failures.py::test_sf05_webhook_double_commit_failure_returns_5xx"
+    },
+    {
+      "step": "5. no rejection findings",
+      "status": "PASS",
+      "detail": "clean"
+    },
+    {
+      "step": "6. final verdict allows readiness (PASS or PASS_WITH_WARNINGS)",
+      "status": "PASS",
+      "detail": "verdict=PASS_WITH_WARNINGS"
+    },
+    {
+      "step": "7. all live-provider/mutation flags are false",
+      "status": "PASS",
+      "detail": "liveStripeCallFlag=false, providerMutatedFlag=false, productMutatedFlag=false"
+    },
+    {
+      "step": "8. operator report reflects the evidence verdict and safety flags",
+      "status": "PASS",
+      "detail": "status=PASS_WITH_WARNINGS"
+    },
+    {
+      "step": "9. fylr repo HEAD unchanged after this proof ran",
+      "status": "PASS",
+      "detail": "before=beba52a9a178a9935ef90b157dceb585aa8f4f2d, after=beba52a9a178a9935ef90b157dceb585aa8f4f2d"
+    }
+  ],
+  "fylrRepoHead": "beba52a9a178a9935ef90b157dceb585aa8f4f2d",
+  "fylrRepoBranch": "main",
+  "finalVerdict": "PASS_WITH_WARNINGS",
+  "evidence": {
+    "productId": "fylr",
+    "productName": "FYLR",
+    "productRepoPath": "C:\\REPLIT PROJECTS\\fylr\\fylr",
+    "productHead": "beba52a9a178a9935ef90b157dceb585aa8f4f2d",
+    "productBranch": "main",
+    "billingDomain": "subscription_lifecycle",
+    "billingProviderClassification": "stripe_subscription_billing",
+    "lifecycleEventCoverage": [
+      {
+        "code": "PAYMENT_RECOVERY_CLEARS_GRACE_PERIOD",
+        "label": "invoice.payment_succeeded clears an active payment grace period",
+        "present": true
+      },
+      {
+        "code": "PAST_DUE_PRESERVES_GRACE_PERIOD",
+        "label": "customer.subscription.updated(past_due) does not downgrade and preserves an existing grace window",
+        "present": true
+      },
+      {
+        "code": "UNPAID_STARTS_DEFENSIVE_GRACE_PERIOD",
+        "label": "customer.subscription.updated(unpaid/past_due) starts a defensive grace window when none is active yet",
+        "present": true
+      },
+      {
+        "code": "CANCELLATION_DELETED_DOWNGRADES_TO_FREE",
+        "label": "customer.subscription.deleted downgrades the user to FREE, not a paid tier",
+        "present": true
+      },
+      {
+        "code": "CANCELLATION_UPDATED_DOWNGRADES_TO_FREE",
+        "label": "customer.subscription.updated(status=canceled) downgrades the user to FREE",
+        "present": true
+      },
+      {
+        "code": "UNKNOWN_CUSTOMER_SAFE_NOOP",
+        "label": "a webhook referencing an unmatched customer is a safe no-op (200, no user row created)",
+        "present": true
+      },
+      {
+        "code": "FULL_LIFECYCLE_RECOVERY_INTEGRATION",
+        "label": "full failed -> past_due -> recovered sequence never downgrades the plan, and un-recovered expiry still degrades access via middleware",
+        "present": true
+      },
+      {
+        "code": "WEBHOOK_IDEMPOTENT_DUPLICATE_HANDLING",
+        "label": "a duplicate Stripe webhook event id is not double-processed (StripeWebhookEvent idempotency table)",
+        "present": true
+      },
+      {
+        "code": "WEBHOOK_FAILURE_PATH_RETURNS_5XX",
+        "label": "a handler failure whose 'failed' status also fails to persist still returns 5xx so Stripe retries",
+        "present": true
+      },
+      {
+        "code": "UNSIGNED_WEBHOOK_REJECTION_UNIT_TESTED",
+        "label": "a deliberately invalid/wrong Stripe-Signature header is unit-tested as rejected (400)",
+        "present": false
+      }
+    ],
+    "webhookSignatureProofRef": "app/billing.py:816-831 (_handle_stripe_webhook: stripe.Webhook.construct_event + SignatureVerificationError -> 400 Invalid signature); tests/test_billing_lifecycle.py:_stripe_signed_payload (genuine Stripe-format HMAC-SHA256 't=<ts>,v1=<sig>' signature posted to the real /billing/webhook route)",
+    "testProofRefs": [
+      "tests/test_billing_lifecycle.py::test_payment_succeeded_clears_grace_period",
+      "tests/test_billing_lifecycle.py::test_subscription_past_due_does_not_downgrade_and_preserves_grace",
+      "tests/test_billing_lifecycle.py::test_subscription_past_due_starts_defensive_grace_if_none_active",
+      "tests/test_billing_lifecycle.py::test_subscription_deleted_downgrades_to_free",
+      "tests/test_billing_lifecycle.py::test_subscription_updated_canceled_downgrades_to_free",
+      "tests/test_billing_lifecycle.py::test_webhook_unknown_customer_is_safe_noop",
+      "tests/test_billing_lifecycle.py::test_full_lifecycle_recovery_never_downgrades",
+      "tests/test_silent_failures.py::test_webhook_idempotency_no_double_fulfill",
+      "tests/test_silent_failures.py::test_sf05_webhook_double_commit_failure_returns_5xx"
+    ],
+    "commandEvidenceRefs": [
+      "python -m pytest tests/test_billing_lifecycle.py tests/test_silent_failures.py::test_webhook_idempotency_no_double_fulfill tests/test_silent_failures.py::test_sf05_webhook_double_commit_failure_returns_5xx -v --tb=short",
+      "exitCode=0",
+      "9 passed, 0 failed"
+    ],
+    "expectedStateTransitions": [
+      "invoice.payment_succeeded -> clears payment_grace_until, plan unchanged",
+      "customer.subscription.updated(past_due) -> plan unchanged, grace window preserved or defensively started",
+      "customer.subscription.updated(unpaid) -> plan unchanged, grace window preserved or defensively started",
+      "customer.subscription.deleted -> plan downgraded to FREE, grace cleared",
+      "customer.subscription.updated(status=canceled) -> plan downgraded to FREE",
+      "unmatched customer_id on any subscription/invoice event -> 200 safe no-op, no user row created",
+      "duplicate Stripe event id (same event replayed) -> not reprocessed (StripeWebhookEvent idempotency)"
+    ],
+    "actualStateTransitionEvidence": [
+      "CONFIRMED: invoice.payment_succeeded clears an active payment grace period",
+      "CONFIRMED: customer.subscription.updated(past_due) does not downgrade and preserves an existing grace window",
+      "CONFIRMED: customer.subscription.updated(unpaid/past_due) starts a defensive grace window when none is active yet",
+      "CONFIRMED: customer.subscription.deleted downgrades the user to FREE, not a paid tier",
+      "CONFIRMED: customer.subscription.updated(status=canceled) downgrades the user to FREE",
+      "CONFIRMED: a webhook referencing an unmatched customer is a safe no-op (200, no user row created)",
+      "CONFIRMED: full failed -> past_due -> recovered sequence never downgrades the plan, and un-recovered expiry still degrades access via middleware",
+      "CONFIRMED: a duplicate Stripe webhook event id is not double-processed (StripeWebhookEvent idempotency table)",
+      "CONFIRMED: a handler failure whose 'failed' status also fails to persist still returns 5xx so Stripe retries"
+    ],
+    "liveStripeCallFlag": false,
+    "providerMutatedFlag": false,
+    "productMutatedFlag": false,
+    "rejectionFindings": [],
+    "verdict": "PASS_WITH_WARNINGS",
+    "generatedAt": "2026-07-21T13:41:37.854Z",
+    "evidenceId": "art_f895bf081d0deeaf5a4de638"
+  },
+  "operatorReport": {
+    "generatedAt": "2026-07-21T13:41:48.853Z",
+    "product": "fylr",
+    "billingDomain": "subscription_lifecycle",
+    "lifecycleEventsCovered": {
+      "total": 10,
+      "present": 9,
+      "missing": [
+        "a deliberately invalid/wrong Stripe-Signature header is unit-tested as rejected (400)"
+      ]
+    },
+    "foundryEvidenceVerdict": "PASS_WITH_WARNINGS",
+    "eveVerificationVerdict": "NOT_RUN_FROM_FOUNDRY",
+    "blockerWarningSummary": [
+      "a deliberately invalid/wrong Stripe-Signature header is unit-tested as rejected (400)"
+    ],
+    "liveStripeCallFlag": false,
+    "providerMutatedFlag": false,
+    "productMutatedFlag": false,
+    "evidenceRefs": [
+      "art_4b77d7803d4ed5daa3805755"
+    ],
+    "remainingOwnerActions": [
+      "Close coverage gap: a deliberately invalid/wrong Stripe-Signature header is unit-tested as rejected (400)"
+    ]
+  }
+}

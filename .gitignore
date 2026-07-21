@@ -16,6 +16,7 @@ next-env.d.ts
 .foundry-proof-local-execution/
 .foundry-proof-provider-actions/
 .foundry-proof-amos-youtube-bridge/
+.foundry-proof-fylr-billing-bridge/
 *.err.log
 *.out.log
 .smoke-server.log

@@ -1,0 +1,267 @@
+{
+  "proof": "foundry-email-qa-harness@1",
+  "generatedAt": "2026-07-21T03:44:34.904Z",
+  "realProviderCallsMade": false,
+  "steps": [
+    {
+      "step": "1. dyln sample config validates",
+      "status": "PASS",
+      "detail": "ok=true, issues=0"
+    },
+    {
+      "step": "2. valid welcome email passes via local fixture adapter",
+      "status": "PASS",
+      "detail": "verdict=PASS, mode=fixture, simulated=true"
+    },
+    {
+      "step": "3. broken release-blocking email is BLOCKED",
+      "status": "PASS",
+      "detail": "verdict=BLOCKED, unresolved={{customerFirstName}},{{resetLink}}"
+    },
+    {
+      "step": "4. virtual inbox stores messages",
+      "status": "PASS",
+      "detail": "stored 2 message(s)"
+    },
+    {
+      "step": "5a. Resend boundary defaults to simulated, no real call",
+      "status": "PASS",
+      "detail": "mode=resend-test, liveCalled=false"
+    },
+    {
+      "step": "5b. Resend boundary calls provider only with both explicit gates set",
+      "status": "PASS",
+      "detail": "mode=resend-live, liveCalled=true, simulated=false"
+    }
+  ],
+  "sampleEvidence": {
+    "pass": {
+      "productId": "dyln",
+      "emailType": "welcome",
+      "productConfigHash": "sha256:4ef145f53972f980a948a13bc0a768eb7a9ed2b4e07be0e719c64913ca6d02e9",
+      "renderedPayloadHash": "sha256:76d00ccbf382b2507f1b82a27d208b88d563f373f6df5a2b69817bcd3031b3c6",
+      "validation": {
+        "ok": true,
+        "issues": [],
+        "checks": {
+          "sender": {
+            "ok": true,
+            "issues": []
+          },
+          "replyTo": {
+            "ok": true,
+            "issues": []
+          },
+          "placeholders": {
+            "ok": true,
+            "unresolved": [],
+            "issues": []
+          },
+          "links": {
+            "ok": true,
+            "missing": [],
+            "issues": []
+          },
+          "assets": {
+            "ok": true,
+            "missing": [],
+            "issues": []
+          },
+          "templateVars": {
+            "ok": true,
+            "missing": [],
+            "issues": []
+          }
+        },
+        "verdict": "PASS"
+      },
+      "senderValidation": {
+        "ok": true,
+        "issues": []
+      },
+      "replyToValidation": {
+        "ok": true,
+        "issues": []
+      },
+      "placeholderCheck": {
+        "ok": true,
+        "unresolved": []
+      },
+      "linkCheck": {
+        "ok": true,
+        "missing": []
+      },
+      "assetCheck": {
+        "ok": true,
+        "missing": []
+      },
+      "inboxMessageId": "art_a50c7acd97275d23925e3232",
+      "deliveryCorrelation": {
+        "adapterId": "local-fixture",
+        "mode": "fixture",
+        "providerReference": "fixture_7d9cb20e-102d-40ac-b855-e204fdcd5b3e",
+        "simulated": true,
+        "sentAt": "2026-07-21T03:44:34.867Z"
+      },
+      "verdict": "PASS",
+      "generatedAt": "2026-07-21T03:44:34.885Z",
+      "evidenceId": "art_c4a407c9cd7c15c7ff8fb3db"
+    },
+    "blocked": {
+      "productId": "dyln",
+      "emailType": "password_reset",
+      "productConfigHash": "sha256:4ef145f53972f980a948a13bc0a768eb7a9ed2b4e07be0e719c64913ca6d02e9",
+      "renderedPayloadHash": "sha256:88d212b3984bdc0e86cec7069d4d809928e2af529f0ca5b2f0ebf92dd219e456",
+      "validation": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "UNRESOLVED_PLACEHOLDER",
+            "message": "unresolved placeholder {{customerFirstName}} found in subject/body",
+            "severity": "error"
+          },
+          {
+            "code": "UNRESOLVED_PLACEHOLDER",
+            "message": "unresolved placeholder {{resetLink}} found in subject/body",
+            "severity": "error"
+          },
+          {
+            "code": "MISSING_REQUIRED_LINK",
+            "message": "required link \"https://dyln.example/unsubscribe\" was not found in the rendered body",
+            "severity": "error"
+          },
+          {
+            "code": "MISSING_REQUIRED_LINK",
+            "message": "required link \"https://dyln.example/legal/privacy\" was not found in the rendered body",
+            "severity": "error"
+          },
+          {
+            "code": "MISSING_REQUIRED_LINK",
+            "message": "required link \"https://dyln.example/legal/terms\" was not found in the rendered body",
+            "severity": "error"
+          },
+          {
+            "code": "MISSING_TEMPLATE_VAR",
+            "message": "required template variable \"resetLink\" is missing or empty",
+            "severity": "error"
+          },
+          {
+            "code": "MISSING_TEMPLATE_VAR",
+            "message": "required template variable \"expiresInMinutes\" is missing or empty",
+            "severity": "error"
+          }
+        ],
+        "checks": {
+          "sender": {
+            "ok": true,
+            "issues": []
+          },
+          "replyTo": {
+            "ok": true,
+            "issues": []
+          },
+          "placeholders": {
+            "ok": false,
+            "unresolved": [
+              "{{customerFirstName}}",
+              "{{resetLink}}"
+            ],
+            "issues": [
+              {
+                "code": "UNRESOLVED_PLACEHOLDER",
+                "message": "unresolved placeholder {{customerFirstName}} found in subject/body",
+                "severity": "error"
+              },
+              {
+                "code": "UNRESOLVED_PLACEHOLDER",
+                "message": "unresolved placeholder {{resetLink}} found in subject/body",
+                "severity": "error"
+              }
+            ]
+          },
+          "links": {
+            "ok": false,
+            "missing": [
+              "https://dyln.example/unsubscribe",
+              "https://dyln.example/legal/privacy",
+              "https://dyln.example/legal/terms"
+            ],
+            "issues": [
+              {
+                "code": "MISSING_REQUIRED_LINK",
+                "message": "required link \"https://dyln.example/unsubscribe\" was not found in the rendered body",
+                "severity": "error"
+              },
+              {
+                "code": "MISSING_REQUIRED_LINK",
+                "message": "required link \"https://dyln.example/legal/privacy\" was not found in the rendered body",
+                "severity": "error"
+              },
+              {
+                "code": "MISSING_REQUIRED_LINK",
+                "message": "required link \"https://dyln.example/legal/terms\" was not found in the rendered body",
+                "severity": "error"
+              }
+            ]
+          },
+          "assets": {
+            "ok": true,
+            "missing": [],
+            "issues": []
+          },
+          "templateVars": {
+            "ok": false,
+            "missing": [
+              "resetLink",
+              "expiresInMinutes"
+            ],
+            "issues": [
+              {
+                "code": "MISSING_TEMPLATE_VAR",
+                "message": "required template variable \"resetLink\" is missing or empty",
+                "severity": "error"
+              },
+              {
+                "code": "MISSING_TEMPLATE_VAR",
+                "message": "required template variable \"expiresInMinutes\" is missing or empty",
+                "severity": "error"
+              }
+            ]
+          }
+        },
+        "verdict": "BLOCKED"
+      },
+      "senderValidation": {
+        "ok": true,
+        "issues": []
+      },
+      "replyToValidation": {
+        "ok": true,
+        "issues": []
+      },
+      "placeholderCheck": {
+        "ok": false,
+        "unresolved": [
+          "{{customerFirstName}}",
+          "{{resetLink}}"
+        ]
+      },
+      "linkCheck": {
+        "ok": false,
+        "missing": [
+          "https://dyln.example/unsubscribe",
+          "https://dyln.example/legal/privacy",
+          "https://dyln.example/legal/terms"
+        ]
+      },
+      "assetCheck": {
+        "ok": true,
+        "missing": []
+      },
+      "inboxMessageId": "art_d8b44695f723f613ed986697",
+      "verdict": "BLOCKED",
+      "generatedAt": "2026-07-21T03:44:34.896Z",
+      "evidenceId": "art_942ce997d59a1923c2a0e8cc"
+    }
+  }
+}

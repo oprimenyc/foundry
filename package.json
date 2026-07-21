@@ -14,7 +14,8 @@
     "proof:profile": "node --import tsx scripts/dyln-profile-proof.ts",
     "proof:m2": "node --import tsx scripts/m2-universal-proof.ts",
     "proof:m4": "node --import tsx scripts/m4-ops-proof.ts",
-    "proof:release": "node --import tsx scripts/governed-release-proof.ts"
+    "proof:release": "node --import tsx scripts/governed-release-proof.ts",
+    "proof:email-qa": "node --import tsx scripts/email-qa-proof.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.57.0",

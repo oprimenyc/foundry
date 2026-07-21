@@ -14,6 +14,11 @@
   ],
   "preApprovedGateReasons": [],
   "knownPrerequisiteGaps": [],
-  "sourceReference": "PRIMEOPP_DOMAIN_READINESS.md: primeopp.com is a placeholder referenced in code (email.ts, terms.tsx, README.md), not evidence of ownership; deployment target is Replit's own autoscale (no Vercel/Railway/Fly/Cloudflare config found in the repo).",
-  "notes": "Read-only source: C:\\Users\\jp718\\Documents\\GitHub\\PrimeOpp. This module has no DNS provider integration and cannot execute this action regardless of approval — see the dns-advisory adapter's fixed prerequisiteMet:true / permanently-advisory verdict rule."
+  "sourceReference": "PRIMEOPP_DOMAIN_READINESS.md: primeopp.com is a placeholder referenced in code (email.ts, terms.tsx, README.md), not evidence of ownership. See replitClassification below for deployment-target status.",
+  "notes": "Read-only source: C:\\Users\\jp718\\Documents\\GitHub\\PrimeOpp. This module has no DNS provider integration and cannot execute this action regardless of approval — see the dns-advisory adapter's fixed prerequisiteMet:true / permanently-advisory verdict rule.",
+  "replitClassification": {
+    "status": "dev_stack_origin_only",
+    "deploymentTargetStatus": "undecided",
+    "explanation": "PrimeOpp's ONLY current host is Replit's own .replit autoscale config (fact, per PRIMEOPP_DOMAIN_READINESS.md and PrimeOS's own ecosystem-hosting-target-map.md). That is historical/dev-stack provenance, not a deployment recommendation — Replit is never an approved production/staging target in this system. PrimeOS's ecosystem-hosting-target-map.md separately recommends Railway once a target is actually selected; this fixture makes no assumption about which approved host will be chosen and does not name Replit as a provider anywhere in this contract (providerType is generic_env, never replit — replit is not, and will never be, a value in lib/provider-actions/types.ts's PROVIDER_TYPES enum)."
+  }
 }

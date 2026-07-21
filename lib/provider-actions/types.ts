@@ -49,6 +49,21 @@ export type MutationRisk = (typeof MUTATION_RISK_LEVELS)[number];
 export const PROVIDER_ACTION_VERDICTS = ["PASS", "FAIL", "BLOCKED", "PASS_WITH_WARNINGS"] as const;
 export type ProviderActionVerdict = (typeof PROVIDER_ACTION_VERDICTS)[number];
 
+/**
+ * Replit ecosystem classification (mission: Replit deployment target scrub).
+ * Replit is never a value in PROVIDER_TYPES above and never will be — it has
+ * no live-executor path anywhere in this module, exactly like every other
+ * provider here, but it additionally must never even be *advised* as a
+ * production/staging deployment target. Where a project's only current host
+ * happens to be Replit, this optional field lets a submission record that
+ * fact honestly (dev-stack provenance) without it reading as a
+ * recommendation to keep deploying there.
+ */
+export const REPLIT_CLASSIFICATION_STATUSES = ["not_applicable", "dev_stack_origin_only", "scrub_required"] as const;
+export type ReplitClassificationStatus = (typeof REPLIT_CLASSIFICATION_STATUSES)[number];
+export const REPLIT_DEPLOYMENT_TARGET_STATUSES = ["undecided", "non_replit_required", "approved_non_replit_selected"] as const;
+export type ReplitDeploymentTargetStatus = (typeof REPLIT_DEPLOYMENT_TARGET_STATUSES)[number];
+
 /** Every human-only approval reason this module can require. Foundry only prepares; a human decides every one of these. */
 export const PROVIDER_ACTION_GATE_REASONS = [
   "live_provider_mutation",
@@ -97,6 +112,14 @@ export const ProviderActionRequestInputSchema = z
       .refine(isValidSecretFingerprint, { message: 'secretFingerprint must be a "sha256:<64 hex chars>" hash, never a raw value' })
       .optional(),
     notes: z.string().max(2000).optional(),
+    /** See REPLIT_CLASSIFICATION_STATUSES doc comment above — never implies Replit is an approved deployment target. */
+    replitClassification: z
+      .object({
+        status: z.enum(REPLIT_CLASSIFICATION_STATUSES),
+        deploymentTargetStatus: z.enum(REPLIT_DEPLOYMENT_TARGET_STATUSES),
+        explanation: z.string().min(1),
+      })
+      .optional(),
   })
   .superRefine(rawSecretRefinement);
 export type ProviderActionRequestInput = z.infer<typeof ProviderActionRequestInputSchema>;

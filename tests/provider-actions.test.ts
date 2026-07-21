@@ -11,6 +11,7 @@ import {
   UnsupportedProviderActionError,
 } from "@/lib/provider-actions/evidence";
 import { computeMutationRisk, requiredApprovalGateReasons } from "@/lib/provider-actions/policy";
+import { PROVIDER_TYPES } from "@/lib/provider-actions/types";
 import { decideProviderActionGate, listProviderActionGates, resetProviderActionGates } from "@/lib/provider-actions/gates";
 import { getProviderActionOperatorReport, getProviderActionStatus } from "@/lib/provider-actions/operator";
 import { listProviderActionAdapters } from "@/lib/provider-actions/adapters/registry";
@@ -66,6 +67,50 @@ test("missing required contract fields are rejected", () => {
   const input = validRequest();
   delete (input as any).rollbackPlan;
   assert.throws(() => parseProviderActionRequestInput(input), ProviderActionRequestValidationError);
+});
+
+// ── Replit deployment-target classification (mission: Replit deployment target scrub) ──
+
+test("Replit is not, and never will be, a value in PROVIDER_TYPES — it cannot be advised as a deployment target through this contract at all", () => {
+  assert.ok(!(PROVIDER_TYPES as readonly string[]).includes("replit"));
+});
+
+test("submitting providerType: \"replit\" is rejected by schema validation, not silently accepted", () => {
+  assert.throws(() => parseProviderActionRequestInput(validRequest({ providerType: "replit" })), ProviderActionRequestValidationError);
+});
+
+test("a request can honestly record Replit as dev-stack-origin-only without that ever counting as a deployment recommendation", () => {
+  const parsed = parseProviderActionRequestInput(
+    validRequest({
+      providerType: "generic_env",
+      actionType: "dns_advisory",
+      replitClassification: { status: "dev_stack_origin_only", deploymentTargetStatus: "undecided", explanation: "current host is Replit; not an approved target" },
+    })
+  );
+  assert.equal(parsed.replitClassification?.status, "dev_stack_origin_only");
+  assert.equal(parsed.replitClassification?.deploymentTargetStatus, "undecided");
+});
+
+test("the evidence package preserves the replitClassification correction end to end (it is not silently stripped)", async () => {
+  await resetEnv();
+  const { evidence } = await ingestProviderActionRequest(
+    validRequest({
+      providerType: "generic_env",
+      actionType: "dns_advisory",
+      replitClassification: { status: "dev_stack_origin_only", deploymentTargetStatus: "undecided", explanation: "current host is Replit; not an approved target" },
+    })
+  );
+  assert.equal(evidence.request.replitClassification?.status, "dev_stack_origin_only");
+});
+
+test("an invalid (uppercase / non-enum) replitClassification.status is rejected, not silently coerced", () => {
+  assert.throws(
+    () =>
+      parseProviderActionRequestInput(
+        validRequest({ replitClassification: { status: "DEV_STACK_ORIGIN_ONLY", deploymentTargetStatus: "undecided", explanation: "x" } })
+      ),
+    ProviderActionRequestValidationError
+  );
 });
 
 // ── Approval policy engine (Phase 3) ─────────────────────────────────────

@@ -1,6 +1,6 @@
 {
   "proof": "foundry-provider-action-adapter@1",
-  "generatedAt": "2026-07-21T10:16:16.843Z",
+  "generatedAt": "2026-07-21T11:00:30.750Z",
   "realProviderCallsMade": false,
   "liveCredentialsRotated": false,
   "liveCredentialsRevoked": false,
@@ -201,8 +201,8 @@
     {
       "file": "panticandy-github-pat-revocation.fixture.json",
       "verdict": "BLOCKED",
-      "actionId": "provact_529eb773-82a6-4867-850e-a75950fae8ec",
-      "evidenceId": "art_ea7825498bb45278f11e7d3e",
+      "actionId": "provact_0bdebdb6-7cfe-46c5-94d0-8eb989f6fd70",
+      "evidenceId": "art_f7aedab97d67c665f4df22d2",
       "requiredApprovalGates": [
         "live_provider_mutation",
         "credential_revocation",
@@ -212,8 +212,8 @@
     {
       "file": "panticandy-db-credential-rotation.fixture.json",
       "verdict": "BLOCKED",
-      "actionId": "provact_ae1f118a-2608-4aa5-9e08-d60b82f742ed",
-      "evidenceId": "art_2cdb91b84ef7178be09be5f3",
+      "actionId": "provact_8cafecba-5ef2-413b-98b6-06419010ea78",
+      "evidenceId": "art_7ae69f67f544557dbfc241da",
       "requiredApprovalGates": [
         "live_provider_mutation",
         "credential_rotation",
@@ -223,8 +223,8 @@
     {
       "file": "vitalcore-nextauth-secret-regeneration.fixture.json",
       "verdict": "BLOCKED",
-      "actionId": "provact_e7d9d4c3-64cd-4928-962e-ba4883f7a079",
-      "evidenceId": "art_9ef35c72159a909014dae719",
+      "actionId": "provact_1a5282c1-6a77-4ea7-a59d-056d226364f1",
+      "evidenceId": "art_604708a36fdccae8caa5c58f",
       "requiredApprovalGates": [
         "live_provider_mutation",
         "credential_rotation",
@@ -235,8 +235,8 @@
     {
       "file": "vitalcore-google-oauth-rotation.fixture.json",
       "verdict": "BLOCKED",
-      "actionId": "provact_4e4d8c58-ce64-4ba9-a5cc-fcaad8d6fd5e",
-      "evidenceId": "art_721a7217945e3ac061f84c62",
+      "actionId": "provact_93f2ce6a-de77-4631-bc44-3023b43e1fcd",
+      "evidenceId": "art_b8aad94a7b7e0c682d222008",
       "requiredApprovalGates": [
         "live_provider_mutation",
         "credential_rotation",
@@ -246,8 +246,8 @@
     {
       "file": "vitalcore-db-credential-rotation.fixture.json",
       "verdict": "BLOCKED",
-      "actionId": "provact_83f72183-fff9-4ef3-8d1e-743f71dac2a2",
-      "evidenceId": "art_8b1b98e17704d92ce16d9489",
+      "actionId": "provact_ae653ee7-bb6c-4b7e-b2d4-c19cedcbd90d",
+      "evidenceId": "art_7c64a9db9e4ce4850d17f726",
       "requiredApprovalGates": [
         "live_provider_mutation",
         "credential_rotation",
@@ -257,8 +257,8 @@
     {
       "file": "dyln-staging-env-update-advisory.fixture.json",
       "verdict": "BLOCKED",
-      "actionId": "provact_c63cfa5f-c89f-4a35-ac46-5b15b0021169",
-      "evidenceId": "art_6f256ba33388c01dc95b7bb8",
+      "actionId": "provact_94655ef6-5e1e-41d3-b605-586eb4d5b372",
+      "evidenceId": "art_2ef86f80b46ae371c6f2556d",
       "requiredApprovalGates": [
         "live_provider_mutation",
         "deployment_env_mutation"
@@ -267,8 +267,8 @@
     {
       "file": "primeopp-domain-env-deployment-advisory.fixture.json",
       "verdict": "PASS_WITH_WARNINGS",
-      "actionId": "provact_2ce297e8-e9e7-42c7-a946-4177536826ae",
-      "evidenceId": "art_c949f62558f0669ef0ee6c07",
+      "actionId": "provact_3061a338-d499-4b1c-95df-245b65c9d4b5",
+      "evidenceId": "art_361c82769eb36aa137cb34f1",
       "requiredApprovalGates": [
         "dns_mutation"
       ]
@@ -276,8 +276,8 @@
     {
       "file": "railway-staging-env-update-dryrun.fixture.json",
       "verdict": "BLOCKED",
-      "actionId": "provact_f8be8a20-b084-4458-b971-747b6d203ae9",
-      "evidenceId": "art_3993e32a87a5d2a226bcee37",
+      "actionId": "provact_8b0c3e9f-5de4-409d-b6e7-8ea2d71f8a00",
+      "evidenceId": "art_72a97b16c4a6325398252359",
       "requiredApprovalGates": [
         "live_provider_mutation",
         "deployment_env_mutation"
@@ -286,15 +286,15 @@
     {
       "file": "fly-health-verification-dryrun.fixture.json",
       "verdict": "PASS",
-      "actionId": "provact_221f7e41-aecd-4d4b-b682-ad013acaa62b",
-      "evidenceId": "art_25669fa0fc8aceafa5eb579f",
+      "actionId": "provact_2ea1f799-864d-4416-acc9-471ea867e0be",
+      "evidenceId": "art_de44029eb5f9c26c69cf74c9",
       "requiredApprovalGates": []
     },
     {
       "file": "vercel-missing-cli-blocked-advisory.fixture.json",
       "verdict": "BLOCKED",
-      "actionId": "provact_313ba5ab-74c7-46a6-a548-1fbbee497a73",
-      "evidenceId": "art_3f1efcec6b4474e1adc5f37c",
+      "actionId": "provact_2173df20-60ea-48b5-ad79-fa3f6bdddf89",
+      "evidenceId": "art_1ac5cb23c264e2f64b611f61",
       "requiredApprovalGates": [
         "live_provider_mutation",
         "deployment_env_mutation"

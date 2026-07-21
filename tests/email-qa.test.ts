@@ -8,7 +8,7 @@ import { runEmailQaAndProduceEvidence } from "@/lib/email-qa/evidence";
 import { listInboxMessages } from "@/lib/email-qa/inbox";
 import { LocalFixtureAdapter } from "@/lib/email-qa/adapters/local-fixture.adapter";
 import { ResendQaAdapter, liveResendSendExplicitlyEnabled, type ResendQaAdapterOptions } from "@/lib/email-qa/adapters/resend-boundary.adapter";
-import { DYLN_SAMPLE_EMAIL_CONFIG } from "@/lib/email-qa/fixtures/dyln.sample-config";
+import { DYLN_EMAIL_CONFIG } from "@/lib/email-qa/fixtures/dyln.config";
 import type { EmailPayload, ProductEmailConfig } from "@/lib/email-qa/types";
 
 const testDir = path.join(process.cwd(), ".foundry-test-data", "email-qa");
@@ -75,6 +75,16 @@ test("valid local email passes", async () => {
   assert.equal(evidence.validation.ok, true);
   assert.ok(evidence.evidenceId);
   assert.ok(evidence.inboxMessageId);
+});
+
+test("payload productId mismatched against config productId fails", async () => {
+  await resetEnv();
+  const config = baseConfig();
+  const payload = basePayload({ productId: "someone-elses-product" });
+  const result = runEmailQaValidation(config, payload);
+  assert.equal(result.ok, false);
+  assert.equal(result.verdict, "FAIL");
+  assert.ok(result.checks.productIdentity.issues.some((i) => i.code === "PRODUCT_IDENTITY_MISMATCH"));
 });
 
 test("missing sender fails", async () => {
@@ -205,7 +215,7 @@ test("product config validates", async () => {
   assert.ok(bad.issues.length > 0);
   assert.ok(bad.issues.every((i) => i.code === "CONFIG_SCHEMA_INVALID"));
 
-  const dylnSample = validateProductEmailConfig(DYLN_SAMPLE_EMAIL_CONFIG);
-  assert.equal(dylnSample.ok, true);
-  assert.equal(dylnSample.config?.sample, true);
+  const dyln = validateProductEmailConfig(DYLN_EMAIL_CONFIG);
+  assert.equal(dyln.ok, true);
+  assert.equal(dyln.config?.sample, false);
 });

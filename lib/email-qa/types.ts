@@ -108,6 +108,7 @@ export interface ValidationResult {
   ok: boolean;
   issues: ValidationIssue[];
   checks: {
+    productIdentity: { ok: boolean; issues: ValidationIssue[] };
     sender: { ok: boolean; issues: ValidationIssue[] };
     replyTo: { ok: boolean; issues: ValidationIssue[] };
     placeholders: { ok: boolean; unresolved: string[]; issues: ValidationIssue[] };

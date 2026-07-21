@@ -1,10 +1,10 @@
 {
   "proof": "foundry-email-qa-harness@1",
-  "generatedAt": "2026-07-21T03:44:34.904Z",
+  "generatedAt": "2026-07-21T04:54:03.144Z",
   "realProviderCallsMade": false,
   "steps": [
     {
-      "step": "1. dyln sample config validates",
+      "step": "1. dyln confirmed config validates",
       "status": "PASS",
       "detail": "ok=true, issues=0"
     },
@@ -16,7 +16,7 @@
     {
       "step": "3. broken release-blocking email is BLOCKED",
       "status": "PASS",
-      "detail": "verdict=BLOCKED, unresolved={{customerFirstName}},{{resetLink}}"
+      "detail": "verdict=BLOCKED, unresolved={{firstName}},{{amount}}"
     },
     {
       "step": "4. virtual inbox stores messages",
@@ -38,12 +38,16 @@
     "pass": {
       "productId": "dyln",
       "emailType": "welcome",
-      "productConfigHash": "sha256:4ef145f53972f980a948a13bc0a768eb7a9ed2b4e07be0e719c64913ca6d02e9",
-      "renderedPayloadHash": "sha256:76d00ccbf382b2507f1b82a27d208b88d563f373f6df5a2b69817bcd3031b3c6",
+      "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
+      "renderedPayloadHash": "sha256:520afc4a3ef0c90cb1cfb9e6d556adccaaf6a57b4cecc7e3be3e060a97b647ea",
       "validation": {
         "ok": true,
         "issues": [],
         "checks": {
+          "productIdentity": {
+            "ok": true,
+            "issues": []
+          },
           "sender": {
             "ok": true,
             "issues": []
@@ -95,63 +99,62 @@
         "ok": true,
         "missing": []
       },
-      "inboxMessageId": "art_a50c7acd97275d23925e3232",
+      "inboxMessageId": "art_588da1d8811ec76411422574",
       "deliveryCorrelation": {
         "adapterId": "local-fixture",
         "mode": "fixture",
-        "providerReference": "fixture_7d9cb20e-102d-40ac-b855-e204fdcd5b3e",
+        "providerReference": "fixture_7a718ba4-b0e9-46aa-8de3-bbe3378de7b3",
         "simulated": true,
-        "sentAt": "2026-07-21T03:44:34.867Z"
+        "sentAt": "2026-07-21T04:54:03.107Z"
       },
       "verdict": "PASS",
-      "generatedAt": "2026-07-21T03:44:34.885Z",
-      "evidenceId": "art_c4a407c9cd7c15c7ff8fb3db"
+      "generatedAt": "2026-07-21T04:54:03.126Z",
+      "evidenceId": "art_603754532c886370b10317ed"
     },
     "blocked": {
       "productId": "dyln",
-      "emailType": "password_reset",
-      "productConfigHash": "sha256:4ef145f53972f980a948a13bc0a768eb7a9ed2b4e07be0e719c64913ca6d02e9",
-      "renderedPayloadHash": "sha256:88d212b3984bdc0e86cec7069d4d809928e2af529f0ca5b2f0ebf92dd219e456",
+      "emailType": "payment-confirmed",
+      "productConfigHash": "sha256:9ebfd1f32c8bf4755399315b35875819e485b50b9afe1d052ca2785845df6bff",
+      "renderedPayloadHash": "sha256:5ced29be650db876aae39654dbcafc1e0e83a6399620139e9d4acc65f65bf8b7",
       "validation": {
         "ok": false,
         "issues": [
           {
             "code": "UNRESOLVED_PLACEHOLDER",
-            "message": "unresolved placeholder {{customerFirstName}} found in subject/body",
+            "message": "unresolved placeholder {{firstName}} found in subject/body",
             "severity": "error"
           },
           {
             "code": "UNRESOLVED_PLACEHOLDER",
-            "message": "unresolved placeholder {{resetLink}} found in subject/body",
-            "severity": "error"
-          },
-          {
-            "code": "MISSING_REQUIRED_LINK",
-            "message": "required link \"https://dyln.example/unsubscribe\" was not found in the rendered body",
-            "severity": "error"
-          },
-          {
-            "code": "MISSING_REQUIRED_LINK",
-            "message": "required link \"https://dyln.example/legal/privacy\" was not found in the rendered body",
-            "severity": "error"
-          },
-          {
-            "code": "MISSING_REQUIRED_LINK",
-            "message": "required link \"https://dyln.example/legal/terms\" was not found in the rendered body",
+            "message": "unresolved placeholder {{amount}} found in subject/body",
             "severity": "error"
           },
           {
             "code": "MISSING_TEMPLATE_VAR",
-            "message": "required template variable \"resetLink\" is missing or empty",
+            "message": "required template variable \"firstName\" is missing or empty",
             "severity": "error"
           },
           {
             "code": "MISSING_TEMPLATE_VAR",
-            "message": "required template variable \"expiresInMinutes\" is missing or empty",
+            "message": "required template variable \"amount\" is missing or empty",
+            "severity": "error"
+          },
+          {
+            "code": "MISSING_TEMPLATE_VAR",
+            "message": "required template variable \"description\" is missing or empty",
+            "severity": "error"
+          },
+          {
+            "code": "MISSING_TEMPLATE_VAR",
+            "message": "required template variable \"dateStr\" is missing or empty",
             "severity": "error"
           }
         ],
         "checks": {
+          "productIdentity": {
+            "ok": true,
+            "issues": []
+          },
           "sender": {
             "ok": true,
             "issues": []
@@ -163,46 +166,26 @@
           "placeholders": {
             "ok": false,
             "unresolved": [
-              "{{customerFirstName}}",
-              "{{resetLink}}"
+              "{{firstName}}",
+              "{{amount}}"
             ],
             "issues": [
               {
                 "code": "UNRESOLVED_PLACEHOLDER",
-                "message": "unresolved placeholder {{customerFirstName}} found in subject/body",
+                "message": "unresolved placeholder {{firstName}} found in subject/body",
                 "severity": "error"
               },
               {
                 "code": "UNRESOLVED_PLACEHOLDER",
-                "message": "unresolved placeholder {{resetLink}} found in subject/body",
+                "message": "unresolved placeholder {{amount}} found in subject/body",
                 "severity": "error"
               }
             ]
           },
           "links": {
-            "ok": false,
-            "missing": [
-              "https://dyln.example/unsubscribe",
-              "https://dyln.example/legal/privacy",
-              "https://dyln.example/legal/terms"
-            ],
-            "issues": [
-              {
-                "code": "MISSING_REQUIRED_LINK",
-                "message": "required link \"https://dyln.example/unsubscribe\" was not found in the rendered body",
-                "severity": "error"
-              },
-              {
-                "code": "MISSING_REQUIRED_LINK",
-                "message": "required link \"https://dyln.example/legal/privacy\" was not found in the rendered body",
-                "severity": "error"
-              },
-              {
-                "code": "MISSING_REQUIRED_LINK",
-                "message": "required link \"https://dyln.example/legal/terms\" was not found in the rendered body",
-                "severity": "error"
-              }
-            ]
+            "ok": true,
+            "missing": [],
+            "issues": []
           },
           "assets": {
             "ok": true,
@@ -212,18 +195,30 @@
           "templateVars": {
             "ok": false,
             "missing": [
-              "resetLink",
-              "expiresInMinutes"
+              "firstName",
+              "amount",
+              "description",
+              "dateStr"
             ],
             "issues": [
               {
                 "code": "MISSING_TEMPLATE_VAR",
-                "message": "required template variable \"resetLink\" is missing or empty",
+                "message": "required template variable \"firstName\" is missing or empty",
                 "severity": "error"
               },
               {
                 "code": "MISSING_TEMPLATE_VAR",
-                "message": "required template variable \"expiresInMinutes\" is missing or empty",
+                "message": "required template variable \"amount\" is missing or empty",
+                "severity": "error"
+              },
+              {
+                "code": "MISSING_TEMPLATE_VAR",
+                "message": "required template variable \"description\" is missing or empty",
+                "severity": "error"
+              },
+              {
+                "code": "MISSING_TEMPLATE_VAR",
+                "message": "required template variable \"dateStr\" is missing or empty",
                 "severity": "error"
               }
             ]
@@ -242,26 +237,22 @@
       "placeholderCheck": {
         "ok": false,
         "unresolved": [
-          "{{customerFirstName}}",
-          "{{resetLink}}"
+          "{{firstName}}",
+          "{{amount}}"
         ]
       },
       "linkCheck": {
-        "ok": false,
-        "missing": [
-          "https://dyln.example/unsubscribe",
-          "https://dyln.example/legal/privacy",
-          "https://dyln.example/legal/terms"
-        ]
+        "ok": true,
+        "missing": []
       },
       "assetCheck": {
         "ok": true,
         "missing": []
       },
-      "inboxMessageId": "art_d8b44695f723f613ed986697",
+      "inboxMessageId": "art_9ecdbef8d4f90a191022d65b",
       "verdict": "BLOCKED",
-      "generatedAt": "2026-07-21T03:44:34.896Z",
-      "evidenceId": "art_942ce997d59a1923c2a0e8cc"
+      "generatedAt": "2026-07-21T04:54:03.136Z",
+      "evidenceId": "art_44b34b73f2ecbf58c5180180"
     }
   }
 }

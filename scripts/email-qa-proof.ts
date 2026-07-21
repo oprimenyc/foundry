@@ -15,7 +15,7 @@ import { runEmailQaAndProduceEvidence } from "@/lib/email-qa/evidence";
 import { listInboxMessages } from "@/lib/email-qa/inbox";
 import { LocalFixtureAdapter } from "@/lib/email-qa/adapters/local-fixture.adapter";
 import { ResendQaAdapter, liveResendSendExplicitlyEnabled } from "@/lib/email-qa/adapters/resend-boundary.adapter";
-import { DYLN_SAMPLE_EMAIL_CONFIG } from "@/lib/email-qa/fixtures/dyln.sample-config";
+import { DYLN_EMAIL_CONFIG } from "@/lib/email-qa/fixtures/dyln.config";
 import type { EmailPayload } from "@/lib/email-qa/types";
 
 const steps: Array<{ step: string; status: "PASS" | "FAIL"; detail: string }> = [];
@@ -29,16 +29,12 @@ function dylnWelcomePayload(): EmailPayload {
   return {
     productId: "dyln",
     emailType: "welcome",
-    recipient: { type: "customer", address: "qa@example.com" },
-    from: "no-reply@dyln.example",
-    fromName: "dyln",
-    replyTo: "support@dyln.example",
-    subject: "Welcome to dyln",
-    templateInputs: { customerFirstName: "QA" },
-    renderedBody:
-      "Hi QA, welcome to dyln! Manage your preferences: https://dyln.example/unsubscribe | " +
-      "Privacy: https://dyln.example/legal/privacy | Terms: https://dyln.example/legal/terms",
-    requiredLinks: [],
+    recipient: { type: "customer", address: "qa+welcome@dyln.test" },
+    from: "support@getdyln.com",
+    subject: "Welcome to DYLN",
+    templateInputs: { firstName: "QA" },
+    renderedBody: "Hi QA, welcome to DYLN! Go to your Dashboard: https://app.getdyln.com/dashboard | " + "https://getdyln.com/unsubscribe",
+    requiredLinks: ["/dashboard", "https://getdyln.com/unsubscribe"],
     requiredAssets: [],
     headers: { "X-QA-Fixture": "true" },
   };
@@ -55,12 +51,12 @@ async function main() {
   await mkdir(sandbox, { recursive: true });
   resetFoundryPersistence();
 
-  // 1. Sample product config validates.
-  const configCheck = validateProductEmailConfig(DYLN_SAMPLE_EMAIL_CONFIG);
-  record("1. dyln sample config validates", configCheck.ok, `ok=${configCheck.ok}, issues=${configCheck.issues.length}`);
+  // 1. Confirmed dyln product config validates.
+  const configCheck = validateProductEmailConfig(DYLN_EMAIL_CONFIG);
+  record("1. dyln confirmed config validates", configCheck.ok, `ok=${configCheck.ok}, issues=${configCheck.issues.length}`);
 
   // 2. Valid email passes, dispatched through the local fixture adapter (no network, no cost).
-  const passEvidence = await runEmailQaAndProduceEvidence(DYLN_SAMPLE_EMAIL_CONFIG, dylnWelcomePayload(), {
+  const passEvidence = await runEmailQaAndProduceEvidence(DYLN_EMAIL_CONFIG, dylnWelcomePayload(), {
     adapter: new LocalFixtureAdapter(),
     dispatch: true,
   });
@@ -70,13 +66,17 @@ async function main() {
     `verdict=${passEvidence.verdict}, mode=${passEvidence.deliveryCorrelation?.mode}, simulated=${passEvidence.deliveryCorrelation?.simulated}`
   );
 
-  // 3. Broken email (unresolved placeholder + missing link) on a release-blocking
-  //    type is BLOCKED, not merely FAIL.
+  // 3. Broken email (unresolved placeholder + missing vars) on a real
+  //    revenue-critical (-> release-blocking) dyln email type is BLOCKED, not
+  //    merely FAIL. "password_reset" isn't one of dyln's 17 real Tier A
+  //    fixture-covered types (it's Firebase-hosted, Tier B) — use
+  //    payment-confirmed, which is.
   const brokenPayload = dylnWelcomePayload();
-  brokenPayload.emailType = "password_reset";
-  brokenPayload.templateInputs = {}; // missing required resetLink/expiresInMinutes
-  brokenPayload.renderedBody = "Hi {{customerFirstName}}, reset here: {{resetLink}}"; // unresolved + no footer links
-  const blockedEvidence = await runEmailQaAndProduceEvidence(DYLN_SAMPLE_EMAIL_CONFIG, brokenPayload);
+  brokenPayload.emailType = "payment-confirmed";
+  brokenPayload.templateInputs = {}; // missing required firstName/amount/description/dateStr
+  brokenPayload.renderedBody = "Hi {{firstName}}, payment confirmed: {{amount}}"; // unresolved + no footer link
+  brokenPayload.requiredLinks = [];
+  const blockedEvidence = await runEmailQaAndProduceEvidence(DYLN_EMAIL_CONFIG, brokenPayload);
   record(
     "3. broken release-blocking email is BLOCKED",
     blockedEvidence.verdict === "BLOCKED",

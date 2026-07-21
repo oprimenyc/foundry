@@ -1,0 +1,252 @@
+{
+  "proof": "foundry-dyln-email-qa-integration@1",
+  "generatedAt": "2026-07-21T04:54:04.257Z",
+  "realProviderCallsMade": false,
+  "dylnRepoWritten": false,
+  "steps": [
+    {
+      "step": "1. all dyln Tier A fixtures loaded and run",
+      "status": "PASS",
+      "detail": "loaded 17 fixture(s) from C:\\REPLIT PROJECTS\\dyln\\dyln\\server\\services\\__fixtures__\\email"
+    },
+    {
+      "step": "2. dyln repo path/HEAD/branch captured",
+      "status": "PASS",
+      "detail": "path=C:\\REPLIT PROJECTS\\dyln\\dyln, head=9f03187b9ec5e5dbe9ba80c781a1b514db62c63b, branch=feat/v1-deterministic-layer"
+    },
+    {
+      "step": "3. no real provider call made for any dyln fixture",
+      "status": "PASS",
+      "detail": "providerCallMade=true count: 0"
+    },
+    {
+      "step": "4. every fixture has evidence/inbox/hash refs",
+      "status": "PASS",
+      "detail": "checked 17 fixture(s)"
+    },
+    {
+      "step": "5. only the known follow-up-email sender-mismatch gap fails; nothing else FAILs or is BLOCKED",
+      "status": "PASS",
+      "detail": "verdicts={\"PASS\":16,\"FAIL\":1}"
+    }
+  ],
+  "verdictBreakdown": {
+    "PASS": [
+      "ai-degradation-alert",
+      "business-credit-received",
+      "contact-sales-admin-notification",
+      "contact-sales-customer-autoreply",
+      "missed-call-alert",
+      "onboarding-day1",
+      "onboarding-day3",
+      "payment-confirmed",
+      "payment-failed",
+      "sms-activation",
+      "subscription-cancelled",
+      "subscription-confirmed",
+      "voicemail-notification",
+      "waitlist-admin-notification",
+      "waitlist-confirmation",
+      "welcome"
+    ],
+    "FAIL": [
+      "follow-up-email"
+    ]
+  },
+  "bundle": {
+    "dylnRepoPath": "C:\\REPLIT PROJECTS\\dyln\\dyln",
+    "dylnRepoHead": "9f03187b9ec5e5dbe9ba80c781a1b514db62c63b",
+    "dylnRepoBranch": "feat/v1-deterministic-layer",
+    "fixturesDir": "C:\\REPLIT PROJECTS\\dyln\\dyln\\server\\services\\__fixtures__\\email",
+    "generatedAt": "2026-07-21T04:54:04.256Z",
+    "fixtures": [
+      {
+        "fixtureId": "ai-degradation-alert",
+        "functionName": "sendAiDegradationAlertEmail",
+        "module": "server/services/emailService.ts",
+        "fixtureHash": "sha256:c53c7403911dc14dea7e6dce76d44bb257302a53357734a1c905622404bc85fc",
+        "verdict": "PASS",
+        "evidenceId": "art_5177287b891db3c49e12489c",
+        "inboxMessageId": "art_145e0ff0537cefb5f0316af7",
+        "renderedPayloadHash": "sha256:dcf3528c2719a0cad64dd1e10e9dde88c147c15cf8fc3464f1b6fdccecbdaca9",
+        "providerCallMade": false
+      },
+      {
+        "fixtureId": "business-credit-received",
+        "functionName": "sendBusinessCreditReceivedEmail",
+        "module": "server/services/emailService.ts",
+        "fixtureHash": "sha256:82edd40205080fdc37c169b17d7a51a0649e6547c026c5202b19365aafbac1b9",
+        "verdict": "PASS",
+        "evidenceId": "art_91ae942a0856dd455753e9bd",
+        "inboxMessageId": "art_8a7e1ee76617f83b630bf6a7",
+        "renderedPayloadHash": "sha256:9a44072b88305be94469a90303e4e64cbecb6f0217a4f80119b1f5c42e60e7f7",
+        "providerCallMade": false
+      },
+      {
+        "fixtureId": "contact-sales-admin-notification",
+        "functionName": "sendAdminNotification",
+        "module": "server/services/emailService.ts",
+        "fixtureHash": "sha256:20167a94ec5850a7edfc59300a1f60217888ff5651dc261cf44030edb32c9947",
+        "verdict": "PASS",
+        "evidenceId": "art_2cfe111d78515d36c2fa8344",
+        "inboxMessageId": "art_9a0c3993d7a5407783b78ab9",
+        "renderedPayloadHash": "sha256:b2630e6b6f074595bf5aa9239267ee60bb0ad7dad10b25a4f9fb01d7b8224f40",
+        "providerCallMade": false
+      },
+      {
+        "fixtureId": "contact-sales-customer-autoreply",
+        "functionName": "sendCustomerAutoReply",
+        "module": "server/services/emailService.ts",
+        "fixtureHash": "sha256:525f9ae99145fdb45fbbc87d2ffaa70237f91391b5bd3088b4301b201cc09f58",
+        "verdict": "PASS",
+        "evidenceId": "art_cac67888b78656dbede9f5eb",
+        "inboxMessageId": "art_8109bba6cdfaa46c69680776",
+        "renderedPayloadHash": "sha256:10f0a5299217991b2453d020f5f50efe98e6658b71c208b9d47c0fde611d3532",
+        "providerCallMade": false
+      },
+      {
+        "fixtureId": "follow-up-email",
+        "functionName": "sendFollowUpEmail",
+        "module": "server/services/emailFollowUpService.ts",
+        "fixtureHash": "sha256:f5f58f9d27856dfd1085e7b743778c0e92fcebc3743c7c547c49644f4b4d3b68",
+        "verdict": "FAIL",
+        "evidenceId": "art_bed7111db636d46173631bc1",
+        "inboxMessageId": "art_5ee2171acc9ae999d5e0bb2f",
+        "renderedPayloadHash": "sha256:f983eba2fcf4844b6d2c087cbcbddc9e5d7fca8a291cc688914a7e03c5af4756",
+        "providerCallMade": false
+      },
+      {
+        "fixtureId": "missed-call-alert",
+        "functionName": "sendMissedCallAlertEmail",
+        "module": "server/services/emailService.ts",
+        "fixtureHash": "sha256:ce481c72d581f1bb7415a618839c989ab9483f9e811334af454e7fc1eb6deebd",
+        "verdict": "PASS",
+        "evidenceId": "art_72a4a181e5964bf678f06525",
+        "inboxMessageId": "art_562a5a95cf622df2d4ea87c7",
+        "renderedPayloadHash": "sha256:e63fedbf56812eba3bea507d244c7663c5a846bff9a6eed88344b6a57d41529f",
+        "providerCallMade": false
+      },
+      {
+        "fixtureId": "onboarding-day1",
+        "functionName": "sendOnboardingDay1Email",
+        "module": "server/services/emailService.ts",
+        "fixtureHash": "sha256:bc6f6b17c503f8c739498bbc41059741647514c498324fa6cb974bfb1de0275a",
+        "verdict": "PASS",
+        "evidenceId": "art_8822ea33771a797f3e1c9f1e",
+        "inboxMessageId": "art_be1411050aaa8d037fbe595e",
+        "renderedPayloadHash": "sha256:ba67334c837e093c588d3523d1aa7215aac3a9daf26af3c93b6ddffa0eb6dbd7",
+        "providerCallMade": false
+      },
+      {
+        "fixtureId": "onboarding-day3",
+        "functionName": "sendOnboardingDay3Email",
+        "module": "server/services/emailService.ts",
+        "fixtureHash": "sha256:464db57075f3b1e0f2052121bacc5812e4e3415324f0bbd32f611fb6436760f0",
+        "verdict": "PASS",
+        "evidenceId": "art_b62a6bb637f59601ae0281a3",
+        "inboxMessageId": "art_43fd3079bc4aa12c4b9789ba",
+        "renderedPayloadHash": "sha256:8c3084bdb60f6bcc0c9bb27aa6843035a0c52edcbdbe441162f5587df7df8d62",
+        "providerCallMade": false
+      },
+      {
+        "fixtureId": "payment-confirmed",
+        "functionName": "sendPaymentConfirmationEmail",
+        "module": "server/services/emailService.ts",
+        "fixtureHash": "sha256:454afab8f76f82f9f64cabf560c51892fbd0642befc819224f3eaa639172a6d6",
+        "verdict": "PASS",
+        "evidenceId": "art_8506232ffa7106748f920720",
+        "inboxMessageId": "art_d7bf592ece2e62ffe142b14c",
+        "renderedPayloadHash": "sha256:6526f8543cd05afc17df53795a5c2b0d0af40129f5c310c2881166428e7cd5e2",
+        "providerCallMade": false
+      },
+      {
+        "fixtureId": "payment-failed",
+        "functionName": "sendPaymentFailedEmail",
+        "module": "server/services/emailService.ts",
+        "fixtureHash": "sha256:96813c21ad2b4f2e60ba583d5275e6132249309f707e0ac9ad590bfbca0b6ea7",
+        "verdict": "PASS",
+        "evidenceId": "art_d4f0102f24648a21938c31fd",
+        "inboxMessageId": "art_baea79d0c731e1a84ab5b5ff",
+        "renderedPayloadHash": "sha256:d5c62d9c059de99922a8c89e37907f95366e97eeed00eb3ccb674f2e30ef0ced",
+        "providerCallMade": false
+      },
+      {
+        "fixtureId": "sms-activation",
+        "functionName": "sendSmsActivationEmail",
+        "module": "server/services/emailService.ts",
+        "fixtureHash": "sha256:1c7dd4b05f21b39fa88f91dab26441cc33f9260321cc7abec5f7179125582244",
+        "verdict": "PASS",
+        "evidenceId": "art_7c43c3d45fe961c85757ddbc",
+        "inboxMessageId": "art_76944cfdc4825c6567f30191",
+        "renderedPayloadHash": "sha256:1f95d5aa72d38384474e119ffb7e0d738bd86b5b5b0b6339962842a81780e9b8",
+        "providerCallMade": false
+      },
+      {
+        "fixtureId": "subscription-cancelled",
+        "functionName": "sendSubscriptionCancelledEmail",
+        "module": "server/services/emailService.ts",
+        "fixtureHash": "sha256:4b42a31056c30ea0c5d2019f55db5fc1301abc1074b4467640d83fd0adfc006a",
+        "verdict": "PASS",
+        "evidenceId": "art_daccbf33f5c3bfb47c479a19",
+        "inboxMessageId": "art_80c735325f7c8bec39a23886",
+        "renderedPayloadHash": "sha256:068d4319276b31e5583b884b245763c25a139df200fab36e9fbe8f5775206e4b",
+        "providerCallMade": false
+      },
+      {
+        "fixtureId": "subscription-confirmed",
+        "functionName": "sendSubscriptionConfirmationEmail",
+        "module": "server/services/emailService.ts",
+        "fixtureHash": "sha256:6092c28671569915d651532ea17471cb8984b521cfd3afbcfe4256e2ceb924ba",
+        "verdict": "PASS",
+        "evidenceId": "art_275b1bcd486803f681a7ddea",
+        "inboxMessageId": "art_67bfc6d73b4f0fac2f4e22ec",
+        "renderedPayloadHash": "sha256:78794b115a7507b24d4e8063768dfda161db919d06a6821745f758894029278b",
+        "providerCallMade": false
+      },
+      {
+        "fixtureId": "voicemail-notification",
+        "functionName": "sendVoicemailNotificationEmail",
+        "module": "server/services/emailService.ts",
+        "fixtureHash": "sha256:991b8a0c434299b857eda5d4a49ba1cdf0f83460286de78405a8775238b12ec9",
+        "verdict": "PASS",
+        "evidenceId": "art_4d6bb365332fbfe02cedf16a",
+        "inboxMessageId": "art_0bd2b98053e331ab96550b45",
+        "renderedPayloadHash": "sha256:f048383fe838365734030a956dd051d7b89da80de983fb0618b84c88d43754cd",
+        "providerCallMade": false
+      },
+      {
+        "fixtureId": "waitlist-admin-notification",
+        "functionName": "sendWaitlistAdminNotification",
+        "module": "server/services/emailService.ts",
+        "fixtureHash": "sha256:6319c509f8ab1493ad45b0b706992de5278867d2e53d045cc8bf9897fef4b237",
+        "verdict": "PASS",
+        "evidenceId": "art_1437a94fc4fa8da3661efa72",
+        "inboxMessageId": "art_fde10b7566a173028a0ec753",
+        "renderedPayloadHash": "sha256:7e23cdff240aa5bed6e7f585c912a0614fd64050082dfde1b2f03e2102e81d3a",
+        "providerCallMade": false
+      },
+      {
+        "fixtureId": "waitlist-confirmation",
+        "functionName": "sendWaitlistConfirmationEmail",
+        "module": "server/services/emailService.ts",
+        "fixtureHash": "sha256:70255a8ad508ea7fdb94c4810104d74598b19709d3ddc9e6c9041981b154196a",
+        "verdict": "PASS",
+        "evidenceId": "art_5f235cc58ab55ebc7ea154d7",
+        "inboxMessageId": "art_582c723d6159bb2fc3bca5f2",
+        "renderedPayloadHash": "sha256:1f8e8c980ca42f05629cf9174f0d3f039d023244c639981201d073898b5aff8c",
+        "providerCallMade": false
+      },
+      {
+        "fixtureId": "welcome",
+        "functionName": "sendWelcomeEmail",
+        "module": "server/services/emailService.ts",
+        "fixtureHash": "sha256:47d5c1e96850168ae87edff13a625e0539e0a64d8017e690182cab27516d9155",
+        "verdict": "PASS",
+        "evidenceId": "art_79303d95f33363f5046ac229",
+        "inboxMessageId": "art_07dba4f2ef939d72a1096c77",
+        "renderedPayloadHash": "sha256:4178bfb8eb5a9cc1ae9a6afc9d540dd5b3d96b9c12b4acd6a69a5614e3cb1ced",
+        "providerCallMade": false
+      }
+    ]
+  }
+}

@@ -43,6 +43,16 @@ export function validateProductEmailConfig(input: unknown): { ok: boolean; confi
   return { ok: false, issues };
 }
 
+function validateProductIdentity(config: ProductEmailConfig, payload: EmailPayload): { ok: boolean; issues: ValidationIssue[] } {
+  if (payload.productId === config.productId) return { ok: true, issues: [] };
+  const issue: ValidationIssue = {
+    code: "PRODUCT_IDENTITY_MISMATCH",
+    message: `payload productId "${payload.productId}" does not match the product config being validated against ("${config.productId}")`,
+    severity: "error",
+  };
+  return { ok: false, issues: [issue] };
+}
+
 function validateSender(config: ProductEmailConfig, payload: EmailPayload): { ok: boolean; issues: ValidationIssue[] } {
   const issues: ValidationIssue[] = [];
   const { requireSenderMatch } = config.releaseBlockingRules;
@@ -164,6 +174,7 @@ export function runEmailQaValidation(config: ProductEmailConfig, payload: EmailP
     });
   }
 
+  const productIdentity = validateProductIdentity(config, payload);
   const sender = validateSender(config, payload);
   const replyTo = validateReplyTo(config, payload);
   const placeholders = validatePlaceholders(config, payload);
@@ -171,7 +182,7 @@ export function runEmailQaValidation(config: ProductEmailConfig, payload: EmailP
   const assets = validateAssets(config, payload);
   const templateVars = validateTemplateVars(emailType, payload);
 
-  issues.push(...sender.issues, ...replyTo.issues, ...placeholders.issues, ...links.issues, ...assets.issues, ...templateVars.issues);
+  issues.push(...productIdentity.issues, ...sender.issues, ...replyTo.issues, ...placeholders.issues, ...links.issues, ...assets.issues, ...templateVars.issues);
 
   const errors = issues.filter((i) => i.severity === "error");
   const warnings = issues.filter((i) => i.severity === "warning");
@@ -183,6 +194,7 @@ export function runEmailQaValidation(config: ProductEmailConfig, payload: EmailP
     ok: errors.length === 0,
     issues,
     checks: {
+      productIdentity,
       sender,
       replyTo,
       placeholders,

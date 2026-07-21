@@ -11,6 +11,7 @@ next-env.d.ts
 .foundry-test-data/
 .foundry-proof/
 .foundry-proof-email-qa/
+.foundry-proof-dyln-email-qa/
 *.err.log
 *.out.log
 .smoke-server.log

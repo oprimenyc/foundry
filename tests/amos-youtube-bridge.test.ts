@@ -91,9 +91,19 @@ test("real AMOS proof manifest loads with test evidence counts", async () => {
 test("buildAmosYoutubePackageEvidence produces a PASS evidence package with full capability coverage and no rejection findings", async () => {
   await resetEnv();
   const evidence = await buildAmosYoutubePackageEvidence();
+  const repo = getAmosRepoState();
   assert.ok(evidence.evidenceId);
   assert.equal(evidence.productId, "amos");
-  assert.equal(evidence.productHead, "1ae12cf3ec7204c0a593b363ece7e5f23c60620e");
+  // AMOS-CANONICAL is a live, actively-developed repo (see REPOSITORY_INVENTORY.json) --
+  // productHead must track its REAL current commit, not a value pinned to whatever commit
+  // existed when this test was written. Asserting against a live re-read of the same repo
+  // state (rather than a hardcoded hash) verifies the actual invariant -- evidence correctly
+  // reflects live repo state -- without breaking every time AMOS-CANONICAL legitimately
+  // advances. Was pinned to "1ae12cf3ec7204c0a593b363ece7e5f23c60620e" (AMOS-CANONICAL's HEAD
+  // on 2026-07-21); AMOS-CANONICAL has since advanced to "39258f88e0660256ea28ee7ef724cbd665b8361e"
+  // and beyond, which correctly failed this test until fixed here (2026-07-26).
+  assert.match(evidence.productHead, /^[0-9a-f]{40}$/);
+  assert.equal(evidence.productHead, repo.head);
   assert.equal(evidence.rejectionFindings.length, 0);
   assert.ok(evidence.capabilityCoverage.every((c) => c.present), `missing: ${evidence.capabilityCoverage.filter((c) => !c.present).map((c) => c.code).join(", ")}`);
   assert.equal(evidence.verdict, "PASS");

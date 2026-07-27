@@ -1,0 +1,112 @@
+{
+  "capabilityId": "FRUN-001",
+  "generatedAt": "2026-07-27T21:41:54.450Z",
+  "foundryRepository": "C:\\Users\\jp718\\foundry",
+  "foundryBranch": "main",
+  "foundryCommit": "cdbac24cefa9a1a2a18a07914eda82c8f529dc4f",
+  "fixtureRepository": "C:\\Users\\jp718\\foundry\\.foundry-test-data\\frun-runtime-proof\\fixture-repo",
+  "fixtureBranch": "main",
+  "fixtureStartCommit": "1ab1fc3e06c96f5ef4aa84f677116ecefd243505",
+  "missionId": "frun_mission_0ce74be9-104f-4e17-b817-434296b27c9e",
+  "missionStatusBeforeEve": "VALIDATING",
+  "criteriaCompleted": [
+    "criterion-a",
+    "criterion-b"
+  ],
+  "criteriaRemaining": [],
+  "iterations": [
+    {
+      "sequence": 1,
+      "state": "ACCEPTED",
+      "provider": "fixture",
+      "agent": "fixture-agent",
+      "completedRequirements": [
+        "criterion-a"
+      ],
+      "remainingRequirements": [
+        "criterion-b"
+      ],
+      "classifiedExitReason": "SUCCESS"
+    },
+    {
+      "sequence": 2,
+      "state": "ACCEPTED",
+      "provider": "fixture",
+      "agent": "fixture-agent",
+      "completedRequirements": [
+        "criterion-b"
+      ],
+      "remainingRequirements": [],
+      "classifiedExitReason": "SUCCESS"
+    }
+  ],
+  "proofs": {
+    "correctRepositoryBinding": true,
+    "correctBranch": true,
+    "exclusiveLockAcquired": true,
+    "concurrentMutatorRejected": true,
+    "boundedSliceLaunched": true,
+    "controlledChangeCaptured": true,
+    "iterationLedgerPersisted": true,
+    "continuationPacketGenerated": true,
+    "firstWorkerInterruptedSimulated": true,
+    "takeoverReadOnlyBeforeReconciliation": true,
+    "takeoverWritableAfterReconciliation": true,
+    "completedCriterionNotRepeated": true,
+    "unfinishedCriterionContinued": true,
+    "controllerRestartReloadedState": true,
+    "usageLimitSingleRouteDecision": true,
+    "missionControlSurfacePresent": true,
+    "missionNotCompletedBeforeEve": true
+  },
+  "evidenceRefs": [
+    "C:\\Users\\jp718\\foundry\\.foundry-test-data\\frun-runtime-proof\\fixture-repo\\FRUN_FIXTURE.txt",
+    "art_2c60870571f38ac92dcfc110",
+    "art_1850f287a3c199315feed75f"
+  ],
+  "continuationPacketArtifact": "art_1850f287a3c199315feed75f",
+  "noSecretMaterial": true,
+  "eve": {
+    "verdict": "VERIFIED",
+    "verificationId": "eve-frun-8f3f80daf3f70013",
+    "verifierVersion": "canonical-veridian-frun-continuity@1",
+    "checkedAt": "2026-07-27T21:41:54.795Z",
+    "reasons": [],
+    "checks": {
+      "capability_id": true,
+      "mission_id_present": true,
+      "foundry_repo_binding": true,
+      "foundry_branch_binding": true,
+      "foundry_commit_exists": true,
+      "foundry_commit_reachable": true,
+      "fixture_repo_binding": true,
+      "fixture_branch_binding": true,
+      "fixture_start_commit_exists": true,
+      "proof_correctRepositoryBinding": true,
+      "proof_correctBranch": true,
+      "proof_exclusiveLockAcquired": true,
+      "proof_concurrentMutatorRejected": true,
+      "proof_boundedSliceLaunched": true,
+      "proof_controlledChangeCaptured": true,
+      "proof_iterationLedgerPersisted": true,
+      "proof_continuationPacketGenerated": true,
+      "proof_firstWorkerInterruptedSimulated": true,
+      "proof_takeoverReadOnlyBeforeReconciliation": true,
+      "proof_takeoverWritableAfterReconciliation": true,
+      "proof_completedCriterionNotRepeated": true,
+      "proof_unfinishedCriterionContinued": true,
+      "proof_controllerRestartReloadedState": true,
+      "proof_usageLimitSingleRouteDecision": true,
+      "proof_missionControlSurfacePresent": true,
+      "proof_missionNotCompletedBeforeEve": true,
+      "criteria_complete": true,
+      "criteria_remaining_empty": true,
+      "two_iterations": true,
+      "no_duplicate_completed_work": true,
+      "evidence_refs_present": true,
+      "no_secret_material_claim": true
+    }
+  },
+  "missionStatusAfterEve": "COMPLETED",
+  "finalStatus": "PASS"
+}

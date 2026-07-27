@@ -17,6 +17,12 @@ import {
   type ProviderCredentialReferenceRecord,
   type RollbackActionRecord,
   type SignedEvidenceManifestRecord,
+  type MissionRunnerAdmissionRecord,
+  type MissionRunnerEventRecord,
+  type MissionRunnerIterationRecord,
+  type MissionRunnerLockRecord,
+  type MissionRunnerMissionRecord,
+  type MissionRunnerProcessRecord,
 } from "./types";
 
 const DEFAULT_STORE: FoundryStore = {
@@ -34,6 +40,12 @@ const DEFAULT_STORE: FoundryStore = {
   operations: [],
   artifacts: [],
   approvalGates: [],
+  missionRunnerMissions: [],
+  missionRunnerIterations: [],
+  missionRunnerEvents: [],
+  missionRunnerLocks: [],
+  missionRunnerProcesses: [],
+  missionRunnerAdmissions: [],
 };
 
 /** Backward compatibility: stores persisted before a collection existed gain it as empty. */
@@ -306,4 +318,38 @@ export function createApprovalGateRecord(
 /** Content-addressed artifact id: same content ⇒ same id (deterministic). */
 export function createArtifactRecord(input: Omit<ArtifactRecord, "id">): ArtifactRecord {
   return { ...input, id: `art_${input.checksum.slice(0, 24)}` };
+}
+
+export function createMissionRunnerMissionRecord(
+  input: Omit<MissionRunnerMissionRecord, "id">
+): MissionRunnerMissionRecord {
+  return { ...input, id: newId("frun_mission") };
+}
+
+export function createMissionRunnerIterationRecord(
+  input: Omit<MissionRunnerIterationRecord, "id">
+): MissionRunnerIterationRecord {
+  return { ...input, id: newId("frun_iter") };
+}
+
+export function createMissionRunnerEventRecord(
+  input: Omit<MissionRunnerEventRecord, "id" | "timestamp">
+): MissionRunnerEventRecord {
+  return { ...input, id: newId("frun_evt"), timestamp: new Date().toISOString() };
+}
+
+export function createMissionRunnerLockRecord(input: Omit<MissionRunnerLockRecord, "id">): MissionRunnerLockRecord {
+  return { ...input, id: newId("frun_lock") };
+}
+
+export function createMissionRunnerProcessRecord(
+  input: Omit<MissionRunnerProcessRecord, "id">
+): MissionRunnerProcessRecord {
+  return { ...input, id: newId("frun_proc") };
+}
+
+export function createMissionRunnerAdmissionRecord(
+  input: Omit<MissionRunnerAdmissionRecord, "id" | "createdAt">
+): MissionRunnerAdmissionRecord {
+  return { ...input, id: newId("frun_admit"), createdAt: new Date().toISOString() };
 }

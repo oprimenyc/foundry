@@ -313,4 +313,220 @@ export interface FoundryStore {
   operations: OperationEvidenceRecord[];
   artifacts: ArtifactRecord[];
   approvalGates: ApprovalGateRecord[];
+  missionRunnerMissions: MissionRunnerMissionRecord[];
+  missionRunnerIterations: MissionRunnerIterationRecord[];
+  missionRunnerEvents: MissionRunnerEventRecord[];
+  missionRunnerLocks: MissionRunnerLockRecord[];
+  missionRunnerProcesses: MissionRunnerProcessRecord[];
+  missionRunnerAdmissions: MissionRunnerAdmissionRecord[];
+}
+
+export type MissionRunnerMissionState =
+  | "QUEUED"
+  | "PREPARING"
+  | "RUNNING"
+  | "VALIDATING"
+  | "RECOVERING"
+  | "WAITING_FOR_AGENT"
+  | "WAITING_FOR_EXTERNAL_SYSTEM"
+  | "HUMAN_GATE"
+  | "COMPLETED"
+  | "FAILED"
+  | "CANCELLED";
+
+export type MissionRunnerIterationState =
+  | "CREATED"
+  | "PROMPTED"
+  | "EXECUTING"
+  | "OUTPUT_DETECTED"
+  | "REPO_CHANGED"
+  | "CHECKS_RUNNING"
+  | "ACCEPTED"
+  | "REJECTED"
+  | "RETRYING"
+  | "SUPERSEDED";
+
+export type MissionRunnerFailureReason =
+  | "SUCCESS"
+  | "SESSION_LIMIT"
+  | "CONTEXT_LIMIT"
+  | "RATE_LIMIT"
+  | "CREDIT_LIMIT"
+  | "PROVIDER_OUTAGE"
+  | "AUTH_FAILURE"
+  | "MODEL_UNAVAILABLE"
+  | "TOOL_FAILURE"
+  | "AGENT_STALL"
+  | "TIMEOUT"
+  | "PROCESS_CRASH"
+  | "USER_CANCELLED"
+  | "UNKNOWN_FAILURE";
+
+export type MissionRunnerTakeoverState =
+  | "TAKEOVER_PENDING"
+  | "REPOSITORY_RECONCILIATION"
+  | "CHECKPOINT_CONFIRMED"
+  | "AUTHORITY_GRANTED"
+  | "EXECUTION_RESUMED";
+
+export type MissionRunnerSliceClass =
+  | "reconnaissance"
+  | "isolated_repair"
+  | "gap_cluster"
+  | "targeted_verification"
+  | "documentation_reconciliation"
+  | "checkpoint_audit"
+  | "security_review"
+  | "resilience_review"
+  | "final_adversarial_audit";
+
+export interface MissionRunnerRepositoryBinding {
+  repositoryPath: string;
+  repositoryIdentity: string;
+  branch: string;
+  startCommit: string;
+  currentCommit: string;
+  dirtyStateDigest: string;
+  mutating: boolean;
+}
+
+export interface MissionRunnerBudgetState {
+  missionBudget?: string | number;
+  iterationBudget?: string | number;
+  providerBudget?: string | number;
+  modelBudget?: string | number;
+  elapsedTimeBudgetMs?: number;
+  toolCallBudget?: number;
+  retryBudget?: number;
+  tokenBudget?: number | "UNKNOWN";
+  costBudgetUsd?: number | "UNKNOWN";
+  consumedTokens?: number | "UNKNOWN";
+  consumedCostUsd?: number | "UNKNOWN";
+}
+
+export interface MissionRunnerExecutionPolicy {
+  maxTurns: number;
+  maxElapsedMs: number;
+  maxChangedFiles: number;
+  maxRepeatedFailureSignatures: number;
+  targetedTestsPreferred: boolean;
+  checkpointAfterAcceptedSlice: boolean;
+  defaultEffort: string;
+}
+
+export interface MissionRunnerMissionRecord {
+  id: string;
+  capabilityId: "FRUN-001";
+  orgId: string;
+  name: string;
+  missionSpecDigest: string;
+  status: MissionRunnerMissionState;
+  repositoryBindings: MissionRunnerRepositoryBinding[];
+  executionPolicy: MissionRunnerExecutionPolicy;
+  currentCheckpoint: string;
+  completedCriteria: string[];
+  unresolvedCriteria: string[];
+  currentBlocker?: string;
+  humanGates: string[];
+  evidenceManifest: string[];
+  budgetState: MissionRunnerBudgetState;
+  activeProvider?: string;
+  activeAgent?: string;
+  activeModel?: string;
+  currentSlice?: MissionRunnerSliceClass;
+  nextAction: string;
+  finalStatus?: "PASS" | "CONDITIONAL_PASS" | "FAIL";
+  eveVerdict?: "PENDING" | "VERIFIED" | "REJECTED";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MissionRunnerIterationRecord {
+  id: string;
+  missionId: string;
+  sequence: number;
+  state: MissionRunnerIterationState;
+  sliceClass: MissionRunnerSliceClass;
+  agent: string;
+  provider: string;
+  model: string;
+  effort?: string;
+  startedAt: string;
+  endedAt?: string;
+  startCommit: string;
+  endCommit?: string;
+  repositoryStatusDigest: string;
+  exitCode?: number;
+  classifiedExitReason?: MissionRunnerFailureReason;
+  completedRequirements: string[];
+  remainingRequirements: string[];
+  checks: Array<{ command: string; status: "passed" | "failed" | "skipped"; detail: string }>;
+  evidenceManifest: string[];
+  nextRoute?: string;
+  retrySignature?: string;
+  telemetry: { inputTokens?: number | "UNKNOWN"; outputTokens?: number | "UNKNOWN"; costUsd?: number | "UNKNOWN" };
+}
+
+export interface MissionRunnerEventRecord {
+  id: string;
+  missionId: string;
+  iterationId?: string;
+  sequence: number;
+  timestamp: string;
+  type: string;
+  message: string;
+  data?: Record<string, string | number | boolean | null | undefined>;
+}
+
+export interface MissionRunnerLockRecord {
+  id: string;
+  repositoryIdentity: string;
+  repositoryPath: string;
+  branch: string;
+  missionId: string;
+  ownerId: string;
+  processId: number;
+  lockPath: string;
+  heartbeatAt: string;
+  acquiredAt: string;
+  releasedAt?: string;
+  status: "active" | "released" | "stale" | "recovered";
+}
+
+export interface MissionRunnerProcessRecord {
+  id: string;
+  missionId: string;
+  iterationId: string;
+  command: string;
+  args: string[];
+  cwd: string;
+  startedAt: string;
+  endedAt?: string;
+  exitCode?: number | null;
+  signal?: string | null;
+  stdoutRef?: string;
+  stderrRef?: string;
+  structuredEventsRef?: string;
+  childProcessIds: number[];
+  heartbeatAt: string;
+  noOutputMs: number;
+  outputCursor: number;
+}
+
+export interface MissionRunnerAdmissionRecord {
+  id: string;
+  orgId: string;
+  provider: string;
+  agent: string;
+  model: string;
+  allowedActions: string[];
+  deniedActions: string[];
+  maxMissionCostUsd?: number;
+  maxIterationCostUsd?: number;
+  maxRetries: number;
+  maxContextTokens?: number;
+  verificationRequirement: "none" | "foundry" | "eve";
+  securityClassification: "low" | "standard" | "high" | "critical";
+  productionAuthority: boolean;
+  createdAt: string;
 }

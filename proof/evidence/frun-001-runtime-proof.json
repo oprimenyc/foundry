@@ -1,13 +1,13 @@
 {
   "capabilityId": "FRUN-001",
-  "generatedAt": "2026-07-27T21:41:54.450Z",
+  "generatedAt": "2026-07-28T05:21:48.350Z",
   "foundryRepository": "C:\\Users\\jp718\\foundry",
   "foundryBranch": "main",
-  "foundryCommit": "cdbac24cefa9a1a2a18a07914eda82c8f529dc4f",
+  "foundryCommit": "7681439812e395f1847c30e7384654d59f2a5642",
   "fixtureRepository": "C:\\Users\\jp718\\foundry\\.foundry-test-data\\frun-runtime-proof\\fixture-repo",
   "fixtureBranch": "main",
-  "fixtureStartCommit": "1ab1fc3e06c96f5ef4aa84f677116ecefd243505",
-  "missionId": "frun_mission_0ce74be9-104f-4e17-b817-434296b27c9e",
+  "fixtureStartCommit": "f0c84f54281273ff4eeb6f6279e5956e723e7223",
+  "missionId": "frun_mission_88491326-bad5-47ff-9944-00e92017df09",
   "missionStatusBeforeEve": "VALIDATING",
   "criteriaCompleted": [
     "criterion-a",
@@ -61,16 +61,16 @@
   },
   "evidenceRefs": [
     "C:\\Users\\jp718\\foundry\\.foundry-test-data\\frun-runtime-proof\\fixture-repo\\FRUN_FIXTURE.txt",
-    "art_2c60870571f38ac92dcfc110",
-    "art_1850f287a3c199315feed75f"
+    "art_35eae9ab7aefacb1e58bb4b2",
+    "art_b88461df607d86c1241f4681"
   ],
-  "continuationPacketArtifact": "art_1850f287a3c199315feed75f",
+  "continuationPacketArtifact": "art_b88461df607d86c1241f4681",
   "noSecretMaterial": true,
   "eve": {
     "verdict": "VERIFIED",
-    "verificationId": "eve-frun-8f3f80daf3f70013",
+    "verificationId": "eve-frun-659252021af93787",
     "verifierVersion": "canonical-veridian-frun-continuity@1",
-    "checkedAt": "2026-07-27T21:41:54.795Z",
+    "checkedAt": "2026-07-28T05:21:48.748Z",
     "reasons": [],
     "checks": {
       "capability_id": true,

@@ -14,7 +14,7 @@
 import { mkdir, rm, writeFile } from "fs/promises";
 import path from "path";
 import { resetFoundryPersistence } from "@/lib/foundry/store";
-import { getFylrRepoState } from "@/lib/fylr-billing/fixtures/fylr-loader";
+import { getFylrRepoState, isFylrCommitAncestor } from "@/lib/fylr-billing/fixtures/fylr-loader";
 import { buildFylrBillingEvidence, EXPECTED_FYLR_BILLING_HEAD } from "@/lib/fylr-billing/evidence";
 import { getFylrBillingBridgeOperatorReport } from "@/lib/fylr-billing/operator";
 
@@ -44,9 +44,10 @@ async function main() {
   );
 
   // 2. fylr HEAD is at or after the mission's expected billing-lifecycle-fix commit.
+  const expectedHeadIsPresent = fylrRepoBefore.head === EXPECTED_FYLR_BILLING_HEAD || isFylrCommitAncestor(EXPECTED_FYLR_BILLING_HEAD, fylrRepoBefore.head);
   record(
-    "2. fylr HEAD is at the expected billing lifecycle commit",
-    fylrRepoBefore.head === EXPECTED_FYLR_BILLING_HEAD,
+    "2. fylr HEAD contains the expected billing lifecycle commit",
+    expectedHeadIsPresent,
     `expected=${EXPECTED_FYLR_BILLING_HEAD}, actual=${fylrRepoBefore.head}`
   );
 

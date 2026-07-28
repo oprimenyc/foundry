@@ -24,6 +24,7 @@
     "proof:amos-youtube-bridge": "node --import tsx scripts/amos-youtube-bridge-proof.ts",
     "proof:fylr-billing-bridge": "node --import tsx scripts/fylr-billing-bridge-proof.ts",
     "proof:frun-runtime": "node --import tsx scripts/frun-runtime-proof.ts",
+    "proof:frun-multi-product": "node --import tsx scripts/frun-multi-product-proof.ts",
     "proof:recovery:seed": "node --import tsx scripts/crash-recovery-proof.ts seed",
     "proof:recovery:verify": "node --import tsx scripts/crash-recovery-proof.ts verify"
   },

@@ -1,6 +1,6 @@
 {
   "proof": "foundry-fylr-billing-bridge@1",
-  "generatedAt": "2026-07-21T16:09:08.333Z",
+  "generatedAt": "2026-07-28T14:52:45.078Z",
   "fylrMutated": false,
   "liveStripeCallMade": false,
   "providerMutated": false,
@@ -9,17 +9,17 @@
     {
       "step": "1. fylr repo path/HEAD/branch captured read-only",
       "status": "PASS",
-      "detail": "path=C:\\REPLIT PROJECTS\\fylr\\fylr, head=aecb6bc4aec2baf505557a13459cc116fcde514d, branch=main"
+      "detail": "path=C:\\REPLIT PROJECTS\\fylr\\fylr, head=efe79dd3660255923df313ceb1b513c70d261bb8, branch=main"
     },
     {
-      "step": "2. fylr HEAD is at the expected billing lifecycle commit",
+      "step": "2. fylr HEAD contains the expected billing lifecycle commit",
       "status": "PASS",
-      "detail": "expected=aecb6bc4aec2baf505557a13459cc116fcde514d, actual=aecb6bc4aec2baf505557a13459cc116fcde514d"
+      "detail": "expected=aecb6bc4aec2baf505557a13459cc116fcde514d, actual=efe79dd3660255923df313ceb1b513c70d261bb8"
     },
     {
       "step": "3. Foundry evidence package built from fylr's real pytest run",
       "status": "PASS",
-      "detail": "evidenceId=art_c874dedc783d8c63b3da2f3b, verdict=PASS"
+      "detail": "evidenceId=art_7fda34670bd1dc1a4db3cc87, verdict=PASS"
     },
     {
       "step": "4. fylr billing lifecycle pytest run captured passing test proof refs",
@@ -49,17 +49,17 @@
     {
       "step": "9. fylr repo HEAD unchanged after this proof ran",
       "status": "PASS",
-      "detail": "before=aecb6bc4aec2baf505557a13459cc116fcde514d, after=aecb6bc4aec2baf505557a13459cc116fcde514d"
+      "detail": "before=efe79dd3660255923df313ceb1b513c70d261bb8, after=efe79dd3660255923df313ceb1b513c70d261bb8"
     }
   ],
-  "fylrRepoHead": "aecb6bc4aec2baf505557a13459cc116fcde514d",
+  "fylrRepoHead": "efe79dd3660255923df313ceb1b513c70d261bb8",
   "fylrRepoBranch": "main",
   "finalVerdict": "PASS",
   "evidence": {
     "productId": "fylr",
     "productName": "FYLR",
     "productRepoPath": "C:\\REPLIT PROJECTS\\fylr\\fylr",
-    "productHead": "aecb6bc4aec2baf505557a13459cc116fcde514d",
+    "productHead": "efe79dd3660255923df313ceb1b513c70d261bb8",
     "productBranch": "main",
     "billingDomain": "subscription_lifecycle",
     "billingProviderClassification": "stripe_subscription_billing",
@@ -136,7 +136,7 @@
       "tests/test_webhook_signature_rejection.py::test_legacy_route_also_rejects_missing_signature"
     ],
     "commandEvidenceRefs": [
-      "python -m pytest tests/test_billing_lifecycle.py tests/test_silent_failures.py::test_webhook_idempotency_no_double_fulfill tests/test_silent_failures.py::test_sf05_webhook_double_commit_failure_returns_5xx tests/test_webhook_signature_rejection.py -v --tb=short",
+      "C:\\REPLIT PROJECTS\\fylr\\fylr\\venv\\Scripts\\python.exe -m pytest tests/test_billing_lifecycle.py tests/test_silent_failures.py::test_webhook_idempotency_no_double_fulfill tests/test_silent_failures.py::test_sf05_webhook_double_commit_failure_returns_5xx tests/test_webhook_signature_rejection.py -v --tb=short",
       "exitCode=0",
       "17 passed, 0 failed"
     ],
@@ -165,11 +165,11 @@
     "productMutatedFlag": false,
     "rejectionFindings": [],
     "verdict": "PASS",
-    "generatedAt": "2026-07-21T16:08:56.582Z",
-    "evidenceId": "art_c874dedc783d8c63b3da2f3b"
+    "generatedAt": "2026-07-28T14:52:37.264Z",
+    "evidenceId": "art_7fda34670bd1dc1a4db3cc87"
   },
   "operatorReport": {
-    "generatedAt": "2026-07-21T16:09:08.271Z",
+    "generatedAt": "2026-07-28T14:52:45.029Z",
     "product": "fylr",
     "billingDomain": "subscription_lifecycle",
     "lifecycleEventsCovered": {
@@ -184,7 +184,7 @@
     "providerMutatedFlag": false,
     "productMutatedFlag": false,
     "evidenceRefs": [
-      "art_62fc511f8365c83613ff25ff"
+      "art_696ad48e8e92300d96d2fd42"
     ],
     "remainingOwnerActions": []
   }

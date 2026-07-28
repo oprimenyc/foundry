@@ -1,0 +1,73 @@
+{
+  "capabilityId": "FRUN-MULTI-PRODUCT-LOCAL",
+  "mission": "ECOSYSTEM-CLOSEOUT-001",
+  "generatedAt": "2026-07-28T09:20:06.950Z",
+  "foundryRepository": "C:\\Users\\jp718\\foundry",
+  "fixtureRoot": "C:\\Users\\jp718\\foundry\\.foundry-test-data\\frun-multi-product-proof",
+  "providerMutation": false,
+  "repositoryMutationScope": "local fixture filesystem under .foundry-test-data/frun-multi-product-proof only",
+  "liveProviderCallsMade": false,
+  "products": [
+    {
+      "product": "dyln",
+      "missionId": "frun_mission_ec3795f4-67d7-4a86-ae20-695b01182915",
+      "finalStatus": "PASS",
+      "missionStatus": "COMPLETED",
+      "criteriaCompleted": [
+        "criterion-a",
+        "criterion-b"
+      ],
+      "criteriaRemaining": [],
+      "iterationCount": 2,
+      "continuationPacketArtifact": "art_e7d2340e4303027cbba5bfc9",
+      "evidenceRefs": [
+        "C:\\Users\\jp718\\foundry\\.foundry-test-data\\frun-multi-product-proof\\dyln-fixture-repo\\FRUN_FIXTURE.txt",
+        "art_e7d2340e4303027cbba5bfc9",
+        "local-fixture-eve:dyln"
+      ]
+    },
+    {
+      "product": "primeos",
+      "missionId": "frun_mission_57eb60e8-3151-4fed-8c7d-184d44dcbd96",
+      "finalStatus": "PASS",
+      "missionStatus": "COMPLETED",
+      "criteriaCompleted": [
+        "criterion-a",
+        "criterion-b"
+      ],
+      "criteriaRemaining": [],
+      "iterationCount": 2,
+      "continuationPacketArtifact": "art_6ab6a896a5758cee11ce11fb",
+      "evidenceRefs": [
+        "C:\\Users\\jp718\\foundry\\.foundry-test-data\\frun-multi-product-proof\\primeos-fixture-repo\\FRUN_FIXTURE.txt",
+        "art_6ab6a896a5758cee11ce11fb",
+        "local-fixture-eve:primeos"
+      ]
+    }
+  ],
+  "proofs": {
+    "dylnProductLoopRepresented": true,
+    "additionalProductLoopRepresented": true,
+    "allProductsCompleted": true,
+    "continuationPacketsGenerated": true,
+    "durableStoreEveEventsPresent": true,
+    "noActiveFixtureLocksRemain": true,
+    "boundedLocalFixtureOnly": true,
+    "providerMutationPrevented": true
+  },
+  "storeAudit": {
+    "missionCount": 2,
+    "iterationCount": 4,
+    "continuationArtifactCount": 2,
+    "eveVerificationEventCount": 2,
+    "everyMissionHasDurableEveEvent": true,
+    "releasedLockCount": 2,
+    "activeLockCount": 0
+  },
+  "eve": {
+    "verdict": "VERIFIED",
+    "verificationId": "local-fixture-eve:frun-multi-product",
+    "boundary": "Local deterministic fixture verifier only; no external E.V.E. or provider mutation.",
+    "verificationDigest": "sha256:82018cf764e74544237cde0d2f101a8b02e97e439debe7aa7b122bccd6a85cc9"
+  }
+}

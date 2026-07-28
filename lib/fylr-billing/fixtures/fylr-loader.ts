@@ -1,4 +1,5 @@
 import { spawnSync } from "child_process";
+import { existsSync } from "fs";
 import type { FylrBillingTestRunResult, FylrRepoState } from "../types";
 
 /**
@@ -26,6 +27,12 @@ export function getFylrRepoState(repoPath: string = fylrRepoPath()): FylrRepoSta
     throw new Error(`[fylr-loader] could not read fylr repo branch at ${repoPath}: ${branch.stderr || branch.error?.message || "unknown error"}`);
   }
   return { repoPath, head: head.stdout.trim(), branch: branch.stdout.trim() };
+}
+
+/** Read-only ancestry check for freshness gates; never writes to fylr. */
+export function isFylrCommitAncestor(ancestor: string, descendant: string, repoPath: string = fylrRepoPath()): boolean {
+  const result = spawnSync("git", ["-C", repoPath, "merge-base", "--is-ancestor", ancestor, descendant], { encoding: "utf8" });
+  return result.status === 0;
 }
 
 /**
@@ -58,8 +65,28 @@ const BILLING_TEST_ARGS = [
   "--tb=short",
 ];
 
+function resolvePythonCommand(repoPath: string): string {
+  if (process.env.PYTHON) return process.env.PYTHON;
+  const candidates = [
+    `${repoPath}\\venv\\Scripts\\python.exe`,
+    "python",
+    "python3",
+    "py",
+    "C:\\Program Files\\Inkscape\\bin\\python.exe",
+  ];
+  for (const candidate of candidates) {
+    if (candidate.includes("\\") && !existsSync(candidate)) continue;
+    const probeArgs = candidate === "py" ? ["-3", "--version"] : ["--version"];
+    const probe = spawnSync(candidate, probeArgs, { encoding: "utf8" });
+    if (probe.status === 0) return candidate;
+  }
+  return "python";
+}
+
 export function runFylrBillingLifecycleTests(repoPath: string = fylrRepoPath()): FylrBillingTestRunResult {
-  const result = spawnSync("python", BILLING_TEST_ARGS, { cwd: repoPath, encoding: "utf8" });
+  const python = resolvePythonCommand(repoPath);
+  const args = python === "py" ? ["-3", ...BILLING_TEST_ARGS] : BILLING_TEST_ARGS;
+  const result = spawnSync(python, args, { cwd: repoPath, encoding: "utf8" });
   const stdout = result.stdout || "";
   const stderr = result.stderr || "";
   const combined = stdout + stderr;
@@ -74,7 +101,7 @@ export function runFylrBillingLifecycleTests(repoPath: string = fylrRepoPath()):
   const rawTail = tailLines.slice(Math.max(0, tailLines.length - 15)).join("\n");
 
   return {
-    command: `python ${BILLING_TEST_ARGS.join(" ")}`,
+    command: `${python} ${args.join(" ")}`,
     exitCode: result.status ?? 1,
     passed,
     failed,

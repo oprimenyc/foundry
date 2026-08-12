@@ -309,10 +309,31 @@ test("encrypted secrets round-trip and public health contains no secret material
   const encrypted = await secrets.encryptSecret("super-secret-token");
   const decrypted = await secrets.decryptSecret(encrypted);
   assert.equal(decrypted, "super-secret-token");
-  const health = await healthzRoute();
+  const health = await healthzRoute(new Request("http://localhost/api/healthz") as any);
   const body = await health.json();
   assert.equal(body.persistence, "file");
   assert.equal(JSON.stringify(body).includes("super-secret-token"), false);
+});
+
+test("healthz enforces FOUNDRY_SHARED_SECRET when configured", async () => {
+  await resetEnv("healthz-shared-secret");
+  process.env.FOUNDRY_SHARED_SECRET = "test-shared-secret-value";
+  try {
+    const missing = await healthzRoute(new Request("http://localhost/api/healthz") as any);
+    assert.equal(missing.status, 401);
+
+    const wrong = await healthzRoute(
+      new Request("http://localhost/api/healthz", { headers: { "x-foundry-auth": "wrong-value" } }) as any
+    );
+    assert.equal(wrong.status, 401);
+
+    const correct = await healthzRoute(
+      new Request("http://localhost/api/healthz", { headers: { "x-foundry-auth": "test-shared-secret-value" } }) as any
+    );
+    assert.equal(correct.status, 200);
+  } finally {
+    delete process.env.FOUNDRY_SHARED_SECRET;
+  }
 });
 
 test("unknown provider fails closed", async () => {

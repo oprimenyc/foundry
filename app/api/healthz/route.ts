@@ -1,12 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { persistenceHealth } from "@/lib/foundry/service";
-import { authMode } from "@/lib/foundry/auth";
+import { authMode, checkSharedSecret } from "@/lib/foundry/auth";
 import { mocksExplicitlyAllowed } from "@/lib/foundry/providers";
 
 export const dynamic = "force-dynamic";
 
-// public: unauthenticated liveness/config probe; exposes no secrets or tenant data.
-export async function GET() {
+// Gated by FOUNDRY_SHARED_SECRET (X-Foundry-Auth header) rather than the
+// Principal/session system — this is a liveness probe polled by sibling
+// services that don't hold a Bearer token or cookie.
+export async function GET(req: NextRequest) {
+  const denied = checkSharedSecret(req);
+  if (denied) return denied;
   const persistence = await persistenceHealth();
   return NextResponse.json({
     status: "ok",

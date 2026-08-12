@@ -129,3 +129,22 @@ export function authMode(): "token" | "open-dev" | "misconfigured" {
   if (configuredPrincipals().length > 0) return "token";
   return process.env.NODE_ENV === "production" ? "misconfigured" : "open-dev";
 }
+
+/**
+ * Shared-secret gate for routes that must stay reachable without a session
+ * (e.g. the liveness probe external monitors and sibling services poll).
+ * Fails closed in production when FOUNDRY_SHARED_SECRET isn't set.
+ */
+export function checkSharedSecret(req: Request): NextResponse | null {
+  const expected = process.env.FOUNDRY_SHARED_SECRET;
+  if (!expected) {
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json({ error: "FOUNDRY_SHARED_SECRET not configured" }, { status: 503 });
+    }
+    return null;
+  }
+  if (!tokenMatches(req.headers.get("x-foundry-auth"), expected)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return null;
+}
